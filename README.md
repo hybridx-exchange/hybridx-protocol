@@ -1,1 +1,1 @@
-# hybrid-core
+# hybridx-protocol
