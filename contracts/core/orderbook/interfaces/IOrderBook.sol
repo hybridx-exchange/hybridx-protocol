@@ -81,10 +81,7 @@ interface IOrderBook {
     function baseToken() external view returns (address);
     //quote token -- eg: usdc
     function quoteToken() external view returns (address);
-    //update protocol fee rate
-    function protocolFeeRateUpdate(uint newProtocolFeeRate) external;
-    //update subsidy fee rate
-    function subsidyFeeRateUpdate(uint newSubsidyFeeRate) external;
+
     function safeRefund(address token, address payable to) external;
     //get amount out for move price, include swap and take, and call by uniswap v2 pair
     function getAmountOutForMovePrice(address tokenIn, uint amountInOffer)
