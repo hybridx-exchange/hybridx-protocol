@@ -2,11 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "../../deps/interfaces/IERC20.sol";
+import "../../deps/interfaces/IERC721.sol";
 import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "../../deps/libraries/Arrays.sol";
 import "../../config/interfaces/IConfig.sol";
+import "./interfaces/IOrder.sol";
 import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
 import "./OrderQueue.sol";
@@ -16,17 +18,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     using SafeMath for uint;
     using SafeMath for uint112;
     using UQ112x112 for uint224;
-
-    struct Order {
-        address owner;
-        address to;
-        uint orderId;
-        uint price;
-        uint amountOffer;
-        uint amountRemain;
-        uint orderType; //1: limitBuy, 2: limitSell
-        uint orderIndex; //用户订单索引，一个用户最多255
-    }
 
     bytes4 private constant SELECTOR_TRANSFER = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
@@ -54,12 +45,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     uint public baseBalance;
     //计价货币余额
     uint public quoteBalance;
-
-    //未完成总订单，链上不保存已成交的订单(订单id -> Order)
-    mapping(uint => Order) public marketOrders;
-
-    //用户订单(用户地址 -> 订单id数组)
-    mapping(address => uint[]) public override userOrders;
 
     receive() external payable {
     }
@@ -130,23 +115,16 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     function _batchTransfer(address token, address[] memory accounts, uint[] memory amounts) internal {
         address WETH = IOrderBookFactory(factory).WETH();
         for(uint i=0; i<accounts.length; i++) {
-            if (WETH == token){
-                IWETH(WETH).withdraw(amounts[i]);
-                TransferHelper.safeTransferETH(accounts[i], amounts[i]);
-            }
-            else {
-                _safeTransfer(token, accounts[i], amounts[i]);
-            }
+            _singleTransfer(WETH, token, accounts[i], amounts[i]);
         }
     }
 
-    function _singleTransfer(address token, address to, uint amount) internal {
-        address WETH = IOrderBookFactory(factory).WETH();
+    function _singleTransfer(address WETH, address token, address to, uint amount) internal {
         if (token == WETH) {
             IWETH(WETH).withdraw(amount);
             TransferHelper.safeTransferETH(to, amount);
         }
-        else{
+        else {
             _safeTransfer(token, to, amount);
         }
     }
@@ -157,10 +135,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         unlocked = 0;
         _;
         unlocked = 1;
-    }
-
-    function getUserOrders(address user) external override view returns (uint[] memory orderIds) {
-        orderIds = userOrders[user];
     }
 
     function getPrice()
@@ -191,84 +165,49 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     //添加order对象
     function _addLimitOrder(
-        address user,
         address _to,
-        uint _amountOffer,
-        uint _amountRemain,
+        uint _offer,
+        uint _remain,
         uint _price,
         uint _type)
     internal
     returns (uint orderId) {
-        uint[] memory _userOrders = userOrders[user];
-        require(_userOrders.length < 0xff, 'Order Number is exceeded');
-        uint orderIndex = _userOrders.length;
-
-        Order memory order = Order(
-            user,
-            _to,
-            1,
+        IOrder.OrderDetail memory order = IOrder.OrderDetail(
             _price,
-            _amountOffer,
-            _amountRemain,
-            _type,
-            orderIndex);
-        userOrders[user].push(order.orderId);
-
-        marketOrders[order.orderId] = order;
+            _offer,
+            _remain,
+            uint8(_type));
+        orderId = IOrder(orderNFT).mint(order, _to);
         if (length(_type, _price) == 0) {
             addPrice(_type, _price);
         }
 
-        push(_type, _price, order.orderId);
-
-        return order.orderId;
+        push(_type, _price, orderId);
     }
 
     //删除order对象
-    function _removeFrontLimitOrderOfQueue(Order memory order) internal {
+    function _removeFrontLimitOrderOfQueue(uint orderId, IOrder.OrderDetail memory order) internal {
         // pop order from queue of same price
-        pop(order.orderType, order.price);
+        pop(order._type, order._price);
         // delete order from market orders
-        delete marketOrders[order.orderId];
-
-        // delete user order
-        uint userOrderSize = userOrders[order.owner].length;
-        require(userOrderSize > order.orderIndex, 'invalid orderIndex');
-        //overwrite the current element with the last element directly
-        uint lastUsedOrder = userOrders[order.owner][userOrderSize - 1];
-        userOrders[order.owner][order.orderIndex] = lastUsedOrder;
-        //update moved order's index
-        marketOrders[lastUsedOrder].orderIndex = order.orderIndex;
-        // delete the last element of user order list
-        userOrders[order.owner].pop();
+        IOrder(orderNFT).burn(orderId, order._remain);
 
         //delete price
-        if (length(order.orderType, order.price) == 0){
-            delPrice(order.orderType, order.price);
+        if (length(order._type, order._price) == 0){
+            delPrice(order._type, order._price);
         }
     }
 
     //删除order对象
-    function _removeLimitOrder(Order memory order) internal {
+    function _removeLimitOrder(uint orderId, IOrder.OrderDetail memory order) internal {
         //删除队列订单
-        del(order.orderType, order.price, order.orderId);
+        del(order._type, order._price, orderId);
         //删除全局订单
-        delete marketOrders[order.orderId];
-
-        // delete user order
-        uint userOrderSize = userOrders[order.owner].length;
-        require(userOrderSize > order.orderIndex, 'invalid orderIndex');
-        //overwrite the current element with the last element directly
-        uint lastUsedOrder = userOrders[order.owner][userOrderSize - 1];
-        userOrders[order.owner][order.orderIndex] = lastUsedOrder;
-        //update moved order's index
-        marketOrders[lastUsedOrder].orderIndex = order.orderIndex;
-        // delete the last element of user order list
-        userOrders[order.owner].pop();
+        IOrder(orderNFT).burn(orderId, order._remain);
 
         //删除价格
-        if (length(order.orderType, order.price) == 0){
-            delPrice(order.orderType, order.price);
+        if (length(order._type, order._price) == 0){
+            delPrice(order._type, order._price);
         }
     }
 
@@ -283,7 +222,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         if (front < rear){
             allData = new uint[](rear - front);
             for (uint i=front; i<rear; i++) {
-                allData[i-front] = marketOrders[limitOrderQueueMap[direction][price][i]].amountRemain;
+                allData[i-front] = IOrder(orderNFT).getOrderDetail(limitOrderQueueMap[direction][price][i])._remain;
             }
         }
     }
@@ -296,8 +235,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     view
     returns (uint dataAgg) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
-        for (uint i=front; i<rear; i++){
-            dataAgg += marketOrders[limitOrderQueueMap[direction][price][i]].amountRemain;
+        for (uint i=front; i<rear; i++) {
+            dataAgg += IOrder(orderNFT).getOrderDetail(limitOrderQueueMap[direction][price][i])._remain;
         }
     }
 
@@ -369,26 +308,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
                 index++;
             }
         }
-    }
-
-    //市场订单
-    function marketOrder(
-        uint orderId
-    )
-    external
-    override
-    view
-    returns (uint[] memory order){
-        order = new uint[](8);
-        Order memory o = marketOrders[orderId];
-        //order[0] = (uint)(o.owner);
-        //order[1] = (uint)(o.to);
-        order[2] = o.orderId;
-        order[3] = o.price;
-        order[4] = o.amountOffer;
-        order[5] = o.amountRemain;
-        order[6] = o.orderType;
-        order[7] = o.orderIndex;
     }
 
     //用于遍历所有订单
@@ -469,22 +388,19 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         while (index < length && amountLeft > 0) {
             uint orderId = peek(direction, price);
             if (orderId == 0) break;
-            Order memory order = marketOrders[orderId];
-            accountsAll[index] = order.to;
-            uint amountTake = amountLeft > order.amountRemain ? order.amountRemain : amountLeft;
-            order.amountRemain = order.amountRemain - amountTake;
+            IOrder.OrderDetail memory order = IOrder(orderNFT).getOrderDetail(orderId);
+            accountsAll[index] = IERC721(orderNFT).ownerOf(orderId);
+            uint amountTake = amountLeft > order._remain ? order._remain : amountLeft;
             amountsOut[index] = amountTake;
 
             amountLeft = amountLeft - amountTake;
-            if (order.amountRemain != 0) {
-                marketOrders[orderId].amountRemain = order.amountRemain;
-                //emit OrderUpdate(order.owner, order.to, order.price, order.amountOffer, order
-                //.amountRemain, order.orderType);
+            if (order._remain == amountTake) {
+                IOrder(orderNFT).burn(orderId, amountTake);
                 index++;
                 break;
             }
 
-            _removeFrontLimitOrderOfQueue(order);
+            _removeFrontLimitOrderOfQueue(orderId, order);
 
             //emit OrderClosed(order.owner, order.to, order.price, order.amountOffer, order
             //.amountRemain, order.orderType);
@@ -621,7 +537,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(baseToken, to, amountOrderBookOut);
+            _singleTransfer(IOrderBookFactory(factory).WETH(), baseToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
@@ -700,7 +616,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(quoteToken, to, amountOrderBookOut);
+            _singleTransfer(IOrderBookFactory(factory).WETH(), quoteToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
@@ -744,7 +660,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         IPair(pair).skim(user);
         uint amountRemain = _movePriceUp(amountOffer, price, to);
         if (amountRemain != 0) {
-            orderId = _addLimitOrder(user, to, amountOffer, amountRemain, price, LIMIT_BUY);
+            orderId = _addLimitOrder(to, amountOffer, amountRemain, price, LIMIT_BUY);
             //emit OrderCreated(user, to, amountOffer, amountRemain, price, LIMIT_BUY);
         }
 
@@ -773,7 +689,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         IPair(pair).skim(user);
         uint amountRemain = _movePriceDown(amountOffer, price, to);
         if (amountRemain != 0) {
-            orderId = _addLimitOrder(user, to, amountOffer, amountRemain, price, LIMIT_SELL);
+            orderId = _addLimitOrder(to, amountOffer, amountRemain, price, LIMIT_SELL);
             //emit OrderCreated(user, to, amountOffer, amountRemain, price, LIMIT_SELL);
         }
 
@@ -781,22 +697,20 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         _updateBalance();
     }
 
-    function cancelLimitOrder(uint orderId) external override lock {
-        Order memory o = marketOrders[orderId];
-        require(o.owner == msg.sender, 'Owner Invalid');
+    //user send it's order to orderbook，then orderbook burn the order and refund
+    function _cancelLimitOrder(address to, uint orderId) private lock {
+        IOrder.OrderDetail memory o = IOrder(orderNFT).getOrderDetail(orderId);
 
-        _removeLimitOrder(o);
+        _removeLimitOrder(orderId, o);
 
         //refund
-        address token = o.orderType == LIMIT_BUY ? quoteToken : baseToken;
-        _singleTransfer(token, o.to, o.amountRemain);
+        address token = o._type == LIMIT_BUY ? quoteToken : baseToken;
+        _singleTransfer(IOrderBookFactory(factory).WETH(), token, to, o._remain);
 
         //update token balance
         uint balance = IERC20(token).balanceOf(address(this));
-        if (o.orderType == LIMIT_BUY) quoteBalance = balance;
+        if (o._type == LIMIT_BUY) quoteBalance = balance;
         else baseBalance = balance;
-
-        //emit OrderCanceled(o.owner, o.to, o.amountOffer, o.amountRemain, o.price, o.orderType);
     }
 
     /*******************************************************************************************************

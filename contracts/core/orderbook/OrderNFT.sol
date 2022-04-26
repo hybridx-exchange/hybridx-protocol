@@ -9,23 +9,17 @@ import "../../deps/access/AccessControlEnumerable.sol";
 import "../../deps/utils/Context.sol";
 import "../../deps/utils/Counters.sol";
 import "../../deps/libraries/SafeMath.sol";
+import "./interfaces/IOrder.sol";
 
 contract OrderNFT is
     Context,
     AccessControlEnumerable,
     ERC721Enumerable,
     ERC721Burnable,
-    Ownable {
+    Ownable,
+    IOrder {
 
     event OrderUpdate(uint256 indexed tokenId, uint256 offer1, uint256 remain1, uint256 offer2, uint256 remain2);
-
-    struct OrderDetail {
-        uint256 _price;
-        uint256 _offer;
-        uint256 _remain;
-        uint8 _type;
-        uint8 _index;
-    }
 
     using Counters for Counters.Counter;
     using SafeMath for uint256;
@@ -36,7 +30,8 @@ contract OrderNFT is
     string private _baseTokenURI = "";
 
     address public orderbook;
-    mapping(uint => OrderDetail) public getOrderDetail;
+    mapping(uint => OrderDetail) public override getOrderDetail;
+    mapping(address => mapping(uint => uint)) private userOrderAtPrice;
     constructor(address _orderbook) ERC721("HybridX Order", "ORDER") {
         orderbook = _orderbook;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -48,43 +43,43 @@ contract OrderNFT is
         return _baseTokenURI;
     }
 
-    function mint(OrderDetail memory orderDetail, address to) public virtual {
+    function mint(OrderDetail memory orderDetail, address to) external virtual override returns (uint256 tokenId) {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to mint");
-        getOrderDetail[_tokenIdTracker.current()] = orderDetail;
-        _mint(to, _tokenIdTracker.current());
-        _tokenIdTracker.increment();
+        tokenId = userOrderAtPrice[to][orderDetail._price];
+        if (tokenId != 0) {
+            _add(tokenId, orderDetail._offer, orderDetail._remain);
+        } else {
+            tokenId = _tokenIdTracker.current();
+            getOrderDetail[tokenId] = orderDetail;
+            userOrderAtPrice[to][orderDetail._price] = tokenId;
+            _mint(to, tokenId);
+            _tokenIdTracker.increment();
+        }
     }
 
-    function burn(uint256 tokenId) public virtual override {
+    function burn(uint256 tokenId, uint256 amount) public virtual override {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to burn");
-        delete(getOrderDetail[tokenId]);
-        _burn(tokenId);
-    }
-
-    function add(uint256 tokenId, uint256 amount) public virtual {
-        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to deposit");
         OrderDetail memory orderDetail = getOrderDetail[tokenId];
-        require(orderDetail._price != 0, "ORDER: order must be exist");
-        (uint256 offer, uint256 remain) = (orderDetail._offer.add(amount), orderDetail._remain.add(amount));
-
-        emit OrderUpdate(tokenId, orderDetail._offer, orderDetail._remain, offer, remain);
-
-        getOrderDetail[tokenId]._offer = offer;
-        getOrderDetail[tokenId]._remain = remain;
-    }
-
-    function sub(uint256 tokenId, uint256 amount) public virtual {
-        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to deposit");
-        OrderDetail memory orderDetail = getOrderDetail[tokenId];
+        address to = ownerOf(tokenId);
         require(orderDetail._price != 0, "ORDER: order must be exist");
         uint256 remain = orderDetail._remain.sub(amount);
         if (remain == 0) {
-            this.burn(tokenId);
+            delete(getOrderDetail[tokenId]);
+            delete userOrderAtPrice[to][orderDetail._price];
+            _burn(tokenId);
         }
         else {
             emit OrderUpdate(tokenId, orderDetail._offer, orderDetail._remain, orderDetail._offer, remain);
             getOrderDetail[tokenId]._remain = remain;
         }
+    }
+
+    function _add(uint256 _tokenId, uint256 _offer, uint256 _remain) private {
+        OrderDetail memory orderDetail = getOrderDetail[_tokenId];
+        (uint256 offer, uint256 remain) = (orderDetail._offer.add(_offer), orderDetail._remain.add(_remain));
+        emit OrderUpdate(_tokenId, orderDetail._offer, orderDetail._remain, offer, remain);
+        getOrderDetail[_tokenId]._offer = offer;
+        getOrderDetail[_tokenId]._remain = remain;
     }
 
     function _beforeTokenTransfer(
