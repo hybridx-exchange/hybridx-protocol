@@ -10,7 +10,7 @@ import "../../deps/utils/Context.sol";
 import "../../deps/utils/Counters.sol";
 import "../../deps/libraries/SafeMath.sol";
 
-contract Order is
+contract OrderNFT is
     Context,
     AccessControlEnumerable,
     ERC721Enumerable,

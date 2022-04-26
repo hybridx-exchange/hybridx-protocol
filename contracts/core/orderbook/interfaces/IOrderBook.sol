@@ -6,7 +6,8 @@ interface IOrderBook {
     function initialize(
         address _pair,
         address _baseToken,
-        address _quoteToken)
+        address _quoteToken,
+        address _orderNFT)
     external;
 
     function reverse() external;
@@ -80,14 +81,6 @@ interface IOrderBook {
     function baseToken() external view returns (address);
     //quote token -- eg: usdc
     function quoteToken() external view returns (address);
-    //get price step
-    function priceStep() external view returns (uint);
-    //update price step
-    function priceStepUpdate(uint newPriceStep) external;
-    //min amount
-    function minAmount() external view returns (uint);
-    //update min amount
-    function minAmountUpdate(uint newMinAmount) external;
     //update protocol fee rate
     function protocolFeeRateUpdate(uint newProtocolFeeRate) external;
     //update subsidy fee rate
