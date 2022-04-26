@@ -72,10 +72,6 @@ interface IOrderBook {
     function baseDecimal() external view returns (uint);
     //get price decimal
     function priceDecimal() external view returns (uint);
-    //get protocol fee rate
-    function protocolFeeRate() external view returns (uint);
-    //get subsidy fee rate
-    function subsidyFeeRate() external view returns (uint);
 
     //base token -- eg: btc
     function baseToken() external view returns (address);

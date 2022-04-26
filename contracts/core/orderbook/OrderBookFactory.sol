@@ -11,7 +11,7 @@ contract OrderBookFactory is IOrderBookFactory {
     address[] public override allOrderBooks;
     address public override pairFactory;
     address public override WETH;
-    address public config;
+    address public override config;
 
     event OrderBookCreated(address, address, address, address);
 

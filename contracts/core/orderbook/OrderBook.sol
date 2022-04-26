@@ -6,6 +6,7 @@ import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "../../deps/libraries/Arrays.sol";
+import "../../config/interfaces/IConfig.sol";
 import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
 import "./OrderQueue.sol";
@@ -54,12 +55,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //计价货币余额
     uint public quoteBalance;
 
-    //protocol fee rate (按交易量百分比收取，对应万分之x)
-    uint public override protocolFeeRate;
-
-    //subsidy fee rate (从协议费用中抽取一部分用于补贴吃单方，对应protocolFeeRate * x%)
-    uint public override subsidyFeeRate;
-
     //未完成总订单，链上不保存已成交的订单(订单id -> Order)
     mapping(uint => Order) public marketOrders;
 
@@ -93,8 +88,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         baseToken = _baseToken;
         quoteToken = _quoteToken;
         baseDecimal = IERC20(_baseToken).decimals();
-        protocolFeeRate = 30; // 30/10000
-        subsidyFeeRate = 50; // protocolFeeRate * 50%
     }
 
     function reverse() external override {
@@ -102,6 +95,17 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             'Order Exist');
         (baseToken, quoteToken) = (quoteToken, baseToken);
         baseDecimal = IERC20(baseToken).decimals();
+    }
+
+    function _getFeeRate() internal view returns (uint protocolFeeRate, uint subsidyFeeRate) {
+        address configAddress = IOrderBookFactory(factory).config();
+        return (IConfig(configAddress).protocolFeeRate(address(this)),
+                IConfig(configAddress).subsidyFeeRate(address(this)));
+    }
+
+    function _getPriceStep() internal view returns (uint priceStep) {
+        address configAddress = IOrderBookFactory(factory).config();
+        return IConfig(configAddress).priceStep(address(this), getPrice());
     }
 
     function _getBaseBalance() internal view returns (uint balance) {
@@ -505,6 +509,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     internal
     returns (uint amountIn, uint amountOutWithFee, uint communityFee,
         address[] memory accountsTo, uint[] memory amountsTo) {
+        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
         (amountIn, amountOutWithFee, communityFee) = OrderBookLibrary.getAmountOutForTakePrice
             (direction, amountInOffer, price, baseDecimal, protocolFeeRate, subsidyFeeRate, orderAmount);
         (accountsTo, amountsTo) = _takeLimitOrder
@@ -802,7 +807,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountOutGet, uint nextReserveBase, uint nextReserveQuote) {
-        (uint reserveBase, uint reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
+        uint[] memory reserves = new uint[](2);
+        (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
+        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
         uint tradeDir = tradeDirection(tokenIn);
         uint orderDir = OrderBookLibrary.getOppositeDirection(tradeDir); // 订单方向与交易方向相反
         uint amountInLeft = amountInOffer;
@@ -812,7 +819,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             //先计算pair从当前价格到price消耗amountIn的数量
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
-                OrderBookLibrary.getAmountForMovePrice(tradeDir, amountInLeft, reserveBase, reserveQuote, price,
+                OrderBookLibrary.getAmountForMovePrice(tradeDir, amountInLeft, reserves[0], reserves[1], price,
                     baseDecimal);
             if (amountAmmLeft == 0) {
                 break;
@@ -832,8 +839,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         if (amountInLeft > 0) {
             amountOutGet += tradeDir == LIMIT_BUY ?
-            OrderBookLibrary.getAmountOut(amountInLeft, reserveQuote, reserveBase) :
-            OrderBookLibrary.getAmountOut(amountInLeft, reserveBase, reserveQuote);
+                OrderBookLibrary.getAmountOut(amountInLeft, reserves[1], reserves[0]) :
+                OrderBookLibrary.getAmountOut(amountInLeft, reserves[0], reserves[1]);
         }
     }
 
@@ -842,7 +849,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountInGet, uint nextReserveBase, uint nextReserveQuote) {
-        (uint reserveBase, uint reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
+        uint[] memory reserves = new uint[](2);
+        (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
+        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
         uint orderDir = tradeDirection(tokenOut); // 订单方向与交易方向相反
         uint tradeDir = OrderBookLibrary.getOppositeDirection(orderDir);
         uint amountOutLeft = amountOutOffer;
@@ -852,7 +861,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             //先计算pair从当前价格到price消耗amountIn的数量
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
-                OrderBookLibrary.getAmountForMovePriceWithAmountOut(tradeDir, amountOutLeft, reserveBase, reserveQuote,
+                OrderBookLibrary.getAmountForMovePriceWithAmountOut(tradeDir, amountOutLeft, reserves[0], reserves[1],
                     price, baseDecimal);
             if (amountAmmLeft == 0) {
                 break;
@@ -872,8 +881,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         if (amountOutLeft > 0) {
             amountInGet += tradeDir == LIMIT_BUY ?
-            OrderBookLibrary.getAmountIn(amountOutLeft, reserveQuote, reserveBase) :
-            OrderBookLibrary.getAmountIn(amountOutLeft, reserveBase, reserveQuote);
+            OrderBookLibrary.getAmountIn(amountOutLeft, reserves[1], reserves[0]) :
+            OrderBookLibrary.getAmountIn(amountOutLeft, reserves[0], reserves[1]);
         }
     }
 
