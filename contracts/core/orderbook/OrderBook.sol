@@ -2,14 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "../../deps/interfaces/IERC20.sol";
-import "../../deps/interfaces/IERC721.sol";
-import "../../deps/extensions/IERC721Burnable.sol";
 import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "../../deps/libraries/Arrays.sol";
 import "../../config/interfaces/IConfig.sol";
-import "./interfaces/IOrder.sol";
+import "./interfaces/IOrderNFT.sol";
 import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
 import "./OrderQueue.sol";
@@ -224,7 +222,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         if (front < rear){
             allData = new uint[](rear - front);
             for (uint i=front; i<rear; i++) {
-                allData[i-front] = IOrder(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
+                allData[i-front] = IOrderNFT(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
             }
         }
     }
@@ -238,7 +236,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     returns (uint dataAgg) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
         for (uint i=front; i<rear; i++) {
-            dataAgg += IOrder(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
+            dataAgg += IOrderNFT(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
         }
     }
 
@@ -390,14 +388,14 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         while (index < length && amountLeft > 0) {
             uint orderId = peek(direction, price);
             if (orderId == 0) break;
-            IOrder.OrderDetail memory order = IOrder(orderNFT).get(orderId);
+            IOrderNFT.OrderDetail memory order = IOrderNFT(orderNFT).get(orderId);
             accountsAll[index] = IERC721(orderNFT).ownerOf(orderId);
             uint amountTake = amountLeft > order._remain ? order._remain : amountLeft;
             amountsOut[index] = amountTake;
 
             amountLeft = amountLeft - amountTake;
             if (amountTake != order._remain) {
-                IOrder(orderNFT).sub(orderId, amountTake);
+                IOrderNFT(orderNFT).sub(orderId, amountTake);
                 index++;
                 break;
             }
@@ -701,7 +699,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     //user send it's order to orderbook，then orderbook burn the order and refund
     function _cancelLimitOrder(address to, uint orderId) private lock {
-        IOrder.OrderDetail memory o = IOrder(orderNFT).get(orderId);
+        IOrderNFT.OrderDetail memory o = IOrderNFT(orderNFT).get(orderId);
 
         _removeLimitOrder(orderId, o);
 
