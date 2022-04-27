@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../deps/interfaces/IERC20.sol";
 import "../../deps/interfaces/IERC721.sol";
+import "../../deps/extensions/IERC721Burnable.sol";
 import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
@@ -191,7 +192,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         // pop order from queue of same price
         pop(order._type, order._price);
         // delete order from market orders
-        IOrder(orderNFT).burn(orderId, order._remain);
+        IERC721Burnable(orderNFT).burn(orderId);
 
         //delete price
         if (length(order._type, order._price) == 0){
@@ -204,7 +205,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         //删除队列订单
         del(order._type, order._price, orderId);
         //删除全局订单
-        IOrder(orderNFT).burn(orderId, order._remain);
+        IERC721Burnable(orderNFT).burn(orderId);
 
         //删除价格
         if (length(order._type, order._price) == 0){
@@ -395,8 +396,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             amountsOut[index] = amountTake;
 
             amountLeft = amountLeft - amountTake;
-            if (order._remain == amountTake) {
-                IOrder(orderNFT).burn(orderId, amountTake);
+            if (amountTake != order._remain) {
+                IOrder(orderNFT).sub(orderId, amountTake);
                 index++;
                 break;
             }

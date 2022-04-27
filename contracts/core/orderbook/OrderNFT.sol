@@ -31,8 +31,6 @@ contract OrderNFT is
 
     address public orderbook;
     mapping(uint => IOrder.OrderDetail) private orderDetails;
-    //address => type => price => tokenId (change this value when transfer)
-    mapping(address => mapping(uint8 => mapping(uint => uint))) private userOrderAtPrice;
     constructor() ERC721("HybridX Order", "ORDER") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _tokenIdTracker.increment();
@@ -48,29 +46,31 @@ contract OrderNFT is
         return _baseTokenURI;
     }
 
-    function mint(OrderDetail memory orderDetail, address to) external virtual override returns (uint256 tokenId) {
+    function add(uint256 tokenId, uint256 amount) external virtual override {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to mint");
-        tokenId = userOrderAtPrice[to][orderDetail._type][orderDetail._price];
-        if (tokenId != 0) {
-            _add(tokenId, orderDetail._offer, orderDetail._remain);
-        } else {
-            tokenId = _tokenIdTracker.current();
-            orderDetails[tokenId] = orderDetail;
-            userOrderAtPrice[to][orderDetail._type][orderDetail._price] = tokenId;
-            _mint(to, tokenId);
-            _tokenIdTracker.increment();
-        }
+        OrderDetail memory orderDetail = orderDetails[tokenId];
+        require(orderDetail._price != 0, "ORDER: order must be exist");
+        (uint256 offer, uint256 remain) = (orderDetail._offer.add(amount), orderDetail._remain.add(amount));
+        emit OrderUpdate(tokenId, orderDetail._offer, orderDetail._remain, offer, remain);
+        orderDetails[tokenId]._offer = offer;
+        orderDetails[tokenId]._remain = remain;
     }
 
-    function burn(uint256 tokenId, uint256 amount) public virtual override {
+    function mint(OrderDetail memory orderDetail, address to) external virtual override returns (uint256 tokenId) {
+        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to mint");
+        tokenId = _tokenIdTracker.current();
+        orderDetails[tokenId] = orderDetail;
+        _mint(to, tokenId);
+        _tokenIdTracker.increment();
+    }
+
+    function sub(uint256 tokenId, uint256 amount) external virtual override {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to burn");
         OrderDetail memory orderDetail = orderDetails[tokenId];
-        address to = ownerOf(tokenId);
         require(orderDetail._price != 0, "ORDER: order must be exist");
         uint256 remain = orderDetail._remain.sub(amount);
         if (remain == 0) {
             delete(orderDetails[tokenId]);
-            delete userOrderAtPrice[to][orderDetail._type][orderDetail._price];
             _burn(tokenId);
         }
         else {
@@ -79,12 +79,12 @@ contract OrderNFT is
         }
     }
 
-    function _add(uint256 _tokenId, uint256 _offer, uint256 _remain) private {
-        OrderDetail memory orderDetail = orderDetails[_tokenId];
-        (uint256 offer, uint256 remain) = (orderDetail._offer.add(_offer), orderDetail._remain.add(_remain));
-        emit OrderUpdate(_tokenId, orderDetail._offer, orderDetail._remain, offer, remain);
-        orderDetails[_tokenId]._offer = offer;
-        orderDetails[_tokenId]._remain = remain;
+    function burn(uint256 tokenId) public virtual override {
+        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to burn");
+        OrderDetail memory orderDetail = orderDetails[tokenId];
+        require(orderDetail._price != 0, "ORDER: order must be exist");
+        delete(orderDetails[tokenId]);
+        _burn(tokenId);
     }
 
     function get(uint256 _tokenId) public override view returns (OrderDetail memory order) {
