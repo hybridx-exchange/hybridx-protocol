@@ -161,7 +161,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     view
     returns (uint tradeDir, uint orderDir) {
         tradeDir = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
-        tradeDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
+        orderDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
     }
 
     //添加order对象

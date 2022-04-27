@@ -2,6 +2,10 @@
 pragma solidity ^0.8.0;
 
 interface IConfig {
+    function orderNFTByteCode() external view returns (bytes memory bytecode);
+    function setOrderNFTByteCode(bytes memory byteCode) external;
+    function orderBookByteCode() external view returns (bytes memory bytecode);
+    function setOrderBookByteCode(bytes memory byteCode) external;
     function priceStepFactorUpdate(uint newPriceStepFactor) external;
     function protocolFeeRateUpdate(address orderBook, uint newProtocolFeeRate) external;
     function subsidyFeeRateUpdate(address orderBook, uint newSubsidyFeeRate) external;

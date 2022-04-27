@@ -8,7 +8,7 @@ interface IOrder {
         uint256 _remain;
         uint8 _type;
     }
-
+    function initialize(address _admin, address _orderbook) external;
     function mint(OrderDetail memory orderDetail, address to) external returns (uint256 tokenId);
     function burn(uint256 tokenId, uint256 amount) external;
     function get(uint256 tokenId) external view returns (OrderDetail memory order);

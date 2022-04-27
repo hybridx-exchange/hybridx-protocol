@@ -32,11 +32,15 @@ contract OrderNFT is
     address public orderbook;
     mapping(uint => IOrder.OrderDetail) private orderDetails;
     mapping(address => mapping(uint => uint)) private userOrderAtPrice;
-    constructor(address _orderbook) ERC721("HybridX Order", "ORDER") {
-        orderbook = _orderbook;
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(MINTER_ROLE, _orderbook);
+    constructor() ERC721("HybridX Order", "ORDER") {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _tokenIdTracker.increment();
+    }
+
+    function initialize(address _admin, address _orderbook) external override {
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(MINTER_ROLE, _orderbook);
+        orderbook = _orderbook;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {

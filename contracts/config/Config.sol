@@ -11,6 +11,16 @@ contract Config is Ownable, IConfig {
     mapping(address => uint) public protocolFeeRateMap;
     mapping(address => uint) public subsidyFeeRateMap;
     mapping(address => uint) public priceStepMap;
+    bytes public override orderNFTByteCode;
+    bytes public override orderBookByteCode;
+
+    function setOrderNFTByteCode(bytes memory byteCode) external override onlyOwner {
+        orderNFTByteCode = byteCode;
+    }
+
+    function setOrderBookByteCode(bytes memory byteCode) external override onlyOwner {
+        orderBookByteCode = byteCode;
+    }
 
     function priceStepFactorUpdate(uint newPriceStepFactor) external override onlyOwner {
         require(newPriceStepFactor > 0 && newPriceStepFactor <= 100, "Invalid Price Step Factor"); //max 100, min 1
