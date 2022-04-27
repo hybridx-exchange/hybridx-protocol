@@ -156,11 +156,12 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         decimal = IERC20(quoteToken).decimals();
     }
 
-    function tradeDirection(address tokenIn)
+    function getDirection(address tokenIn)
     internal
     view
-    returns (uint direction) {
-        direction = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
+    returns (uint tradeDir, uint orderDir) {
+        tradeDir = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
+        tradeDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
     }
 
     //添加order对象
@@ -721,19 +722,18 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountOutGet, uint nextReserveBase, uint nextReserveQuote) {
-        uint[] memory reserves = new uint[](2);
-        (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
-        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
-        uint tradeDir = tradeDirection(tokenIn);
-        uint orderDir = OrderBookLibrary.getOppositeDirection(tradeDir); // 订单方向与交易方向相反
+        uint[] memory params = new uint[](6);
+        (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
+        (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
+        (params[4], params[5]) = getDirection(tokenIn);//tradeDir - orderDir
         uint amountInLeft = amountInOffer;
         amountOutGet = 0;
-        (uint price, uint amount) = nextBook(orderDir, 0);
+        (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             //先计算pair从当前价格到price消耗amountIn的数量
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
-                OrderBookLibrary.getAmountForMovePrice(tradeDir, amountInLeft, reserves[0], reserves[1], price,
+                OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1], price,
                     baseDecimal);
             if (amountAmmLeft == 0) {
                 break;
@@ -741,20 +741,20 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
             //计算消耗掉一个价格的挂单需要的amountIn数量
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountOutForTakePrice(
-                tradeDir, amountAmmLeft, price, baseDecimal, protocolFeeRate, subsidyFeeRate, amount);
+                params[4], amountAmmLeft, price, baseDecimal, params[2], params[3], amount);
             amountOutGet += amountOutWithFee.sub(communityFee);
             amountInLeft = amountInLeft.sub(amountInForTake);
             if (amountInForTake == amountAmmLeft) {
                 break;
             }
 
-            (price, amount) = nextBook(orderDir, price);
+            (price, amount) = nextBook(params[5], price);
         }
 
         if (amountInLeft > 0) {
-            amountOutGet += tradeDir == LIMIT_BUY ?
-                OrderBookLibrary.getAmountOut(amountInLeft, reserves[1], reserves[0]) :
-                OrderBookLibrary.getAmountOut(amountInLeft, reserves[0], reserves[1]);
+            amountOutGet += params[4] == LIMIT_BUY ?
+                OrderBookLibrary.getAmountOut(amountInLeft, params[1], params[0]) :
+                OrderBookLibrary.getAmountOut(amountInLeft, params[0], params[1]);
         }
     }
 
@@ -763,19 +763,18 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountInGet, uint nextReserveBase, uint nextReserveQuote) {
-        uint[] memory reserves = new uint[](2);
-        (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
-        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
-        uint orderDir = tradeDirection(tokenOut); // 订单方向与交易方向相反
-        uint tradeDir = OrderBookLibrary.getOppositeDirection(orderDir);
+        uint[] memory params = new uint[](6);
+        (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
+        (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
+        (params[5], params[4]) = getDirection(tokenOut);//orderDir - tradeDir
         uint amountOutLeft = amountOutOffer;
         amountInGet = 0;
-        (uint price, uint amount) = nextBook(orderDir, 0);
+        (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             //先计算pair从当前价格到price消耗amountIn的数量
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
-                OrderBookLibrary.getAmountForMovePriceWithAmountOut(tradeDir, amountOutLeft, reserves[0], reserves[1],
+                OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
                     price, baseDecimal);
             if (amountAmmLeft == 0) {
                 break;
@@ -783,20 +782,20 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
             //计算消耗掉一个价格的挂单需要的amountOut数量
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountInForTakePrice
-                (tradeDir, amountAmmLeft, price, baseDecimal, protocolFeeRate, subsidyFeeRate, amount);
+                (params[4], amountAmmLeft, price, baseDecimal, params[2], params[3], amount);
             amountInGet += amountInForTake.add(1);
             amountOutLeft = amountOutLeft.sub(amountOutWithFee.sub(communityFee));
             if (amountOutWithFee == amountAmmLeft) {
                 break;
             }
 
-            (price, amount) = nextBook(orderDir, price);
+            (price, amount) = nextBook(params[5], price);
         }
 
         if (amountOutLeft > 0) {
-            amountInGet += tradeDir == LIMIT_BUY ?
-            OrderBookLibrary.getAmountIn(amountOutLeft, reserves[1], reserves[0]) :
-            OrderBookLibrary.getAmountIn(amountOutLeft, reserves[0], reserves[1]);
+            amountInGet += params[4] == LIMIT_BUY ?
+            OrderBookLibrary.getAmountIn(amountOutLeft, params[1], params[0]) :
+            OrderBookLibrary.getAmountIn(amountOutLeft, params[0], params[1]);
         }
     }
 
@@ -811,8 +810,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
 
         //direction for tokenA swap to tokenB
-        uint tradeDir = tradeDirection(tokenIn);
-        uint orderDir = OrderBookLibrary.getOppositeDirection(tradeDir);
+        (uint tradeDir, uint orderDir) = getDirection(tokenIn);
 
         (uint price, uint amount) = nextBook(orderDir, 0); // 订单方向与交易方向相反
         //只处理挂单，reserveIn/reserveOut只用来计算需要消耗的挂单数量和价格范围
