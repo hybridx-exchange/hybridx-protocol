@@ -11,5 +11,5 @@ interface IOrder {
 
     function mint(OrderDetail memory orderDetail, address to) external returns (uint256 tokenId);
     function burn(uint256 tokenId, uint256 amount) external;
-    function getOrderDetail(uint256 tokenId) external view returns (OrderDetail memory order);
+    function get(uint256 tokenId) external view returns (OrderDetail memory order);
 }

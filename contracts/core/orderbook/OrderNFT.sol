@@ -30,7 +30,7 @@ contract OrderNFT is
     string private _baseTokenURI = "";
 
     address public orderbook;
-    mapping(uint => OrderDetail) public override getOrderDetail;
+    mapping(uint => IOrder.OrderDetail) private orderDetails;
     mapping(address => mapping(uint => uint)) private userOrderAtPrice;
     constructor(address _orderbook) ERC721("HybridX Order", "ORDER") {
         orderbook = _orderbook;
@@ -50,7 +50,7 @@ contract OrderNFT is
             _add(tokenId, orderDetail._offer, orderDetail._remain);
         } else {
             tokenId = _tokenIdTracker.current();
-            getOrderDetail[tokenId] = orderDetail;
+            orderDetails[tokenId] = orderDetail;
             userOrderAtPrice[to][orderDetail._price] = tokenId;
             _mint(to, tokenId);
             _tokenIdTracker.increment();
@@ -59,27 +59,31 @@ contract OrderNFT is
 
     function burn(uint256 tokenId, uint256 amount) public virtual override {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to burn");
-        OrderDetail memory orderDetail = getOrderDetail[tokenId];
+        OrderDetail memory orderDetail = orderDetails[tokenId];
         address to = ownerOf(tokenId);
         require(orderDetail._price != 0, "ORDER: order must be exist");
         uint256 remain = orderDetail._remain.sub(amount);
         if (remain == 0) {
-            delete(getOrderDetail[tokenId]);
+            delete(orderDetails[tokenId]);
             delete userOrderAtPrice[to][orderDetail._price];
             _burn(tokenId);
         }
         else {
             emit OrderUpdate(tokenId, orderDetail._offer, orderDetail._remain, orderDetail._offer, remain);
-            getOrderDetail[tokenId]._remain = remain;
+            orderDetails[tokenId]._remain = remain;
         }
     }
 
     function _add(uint256 _tokenId, uint256 _offer, uint256 _remain) private {
-        OrderDetail memory orderDetail = getOrderDetail[_tokenId];
+        OrderDetail memory orderDetail = orderDetails[_tokenId];
         (uint256 offer, uint256 remain) = (orderDetail._offer.add(_offer), orderDetail._remain.add(_remain));
         emit OrderUpdate(_tokenId, orderDetail._offer, orderDetail._remain, offer, remain);
-        getOrderDetail[_tokenId]._offer = offer;
-        getOrderDetail[_tokenId]._remain = remain;
+        orderDetails[_tokenId]._offer = offer;
+        orderDetails[_tokenId]._remain = remain;
+    }
+
+    function get(uint256 _tokenId) public override view returns (OrderDetail memory order) {
+        order = orderDetails[_tokenId];
     }
 
     function _beforeTokenTransfer(

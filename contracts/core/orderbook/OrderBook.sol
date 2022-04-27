@@ -222,7 +222,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         if (front < rear){
             allData = new uint[](rear - front);
             for (uint i=front; i<rear; i++) {
-                allData[i-front] = IOrder(orderNFT).getOrderDetail(limitOrderQueueMap[direction][price][i])._remain;
+                allData[i-front] = IOrder(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
             }
         }
     }
@@ -236,7 +236,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     returns (uint dataAgg) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
         for (uint i=front; i<rear; i++) {
-            dataAgg += IOrder(orderNFT).getOrderDetail(limitOrderQueueMap[direction][price][i])._remain;
+            dataAgg += IOrder(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
         }
     }
 
@@ -388,7 +388,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         while (index < length && amountLeft > 0) {
             uint orderId = peek(direction, price);
             if (orderId == 0) break;
-            IOrder.OrderDetail memory order = IOrder(orderNFT).getOrderDetail(orderId);
+            IOrder.OrderDetail memory order = IOrder(orderNFT).get(orderId);
             accountsAll[index] = IERC721(orderNFT).ownerOf(orderId);
             uint amountTake = amountLeft > order._remain ? order._remain : amountLeft;
             amountsOut[index] = amountTake;
@@ -699,7 +699,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     //user send it's order to orderbook，then orderbook burn the order and refund
     function _cancelLimitOrder(address to, uint orderId) private lock {
-        IOrder.OrderDetail memory o = IOrder(orderNFT).getOrderDetail(orderId);
+        IOrder.OrderDetail memory o = IOrder(orderNFT).get(orderId);
 
         _removeLimitOrder(orderId, o);
 
