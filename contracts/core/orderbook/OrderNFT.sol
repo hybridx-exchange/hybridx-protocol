@@ -31,7 +31,8 @@ contract OrderNFT is
 
     address public orderbook;
     mapping(uint => IOrder.OrderDetail) private orderDetails;
-    mapping(address => mapping(uint => uint)) private userOrderAtPrice;
+    //address => type => price => tokenId (change this value when transfer)
+    mapping(address => mapping(uint8 => mapping(uint => uint))) private userOrderAtPrice;
     constructor() ERC721("HybridX Order", "ORDER") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _tokenIdTracker.increment();
@@ -49,13 +50,13 @@ contract OrderNFT is
 
     function mint(OrderDetail memory orderDetail, address to) external virtual override returns (uint256 tokenId) {
         require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to mint");
-        tokenId = userOrderAtPrice[to][orderDetail._price];
+        tokenId = userOrderAtPrice[to][orderDetail._type][orderDetail._price];
         if (tokenId != 0) {
             _add(tokenId, orderDetail._offer, orderDetail._remain);
         } else {
             tokenId = _tokenIdTracker.current();
             orderDetails[tokenId] = orderDetail;
-            userOrderAtPrice[to][orderDetail._price] = tokenId;
+            userOrderAtPrice[to][orderDetail._type][orderDetail._price] = tokenId;
             _mint(to, tokenId);
             _tokenIdTracker.increment();
         }
@@ -69,7 +70,7 @@ contract OrderNFT is
         uint256 remain = orderDetail._remain.sub(amount);
         if (remain == 0) {
             delete(orderDetails[tokenId]);
-            delete userOrderAtPrice[to][orderDetail._price];
+            delete userOrderAtPrice[to][orderDetail._type][orderDetail._price];
             _burn(tokenId);
         }
         else {
