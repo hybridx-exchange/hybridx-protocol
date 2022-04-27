@@ -8,17 +8,11 @@ contract PriceList {
     mapping(uint => mapping(uint => uint)) private limitOrderPriceListMap;
     mapping(uint => uint) private limitOrderPriceArrayLength;
 
-    function priceLength(uint direction)
-    internal
-    view
-    returns (uint priceArrayLength) {
+    function priceLength(uint direction) internal view returns (uint priceArrayLength) {
         priceArrayLength = limitOrderPriceArrayLength[direction];
     }
 
-    function priceLocation(uint direction, uint price)
-    internal
-    view
-    returns (uint preIndex, uint next) {
+    function priceLocation(uint direction, uint price) internal view returns (uint preIndex, uint next) {
         (preIndex, next) = (0, limitOrderPriceListMap[direction][0]);
         if (direction == LIMIT_BUY) {
             while(next > price) {
@@ -40,8 +34,7 @@ contract PriceList {
         }
     }
 
-    function addPrice(uint direction, uint price)
-    internal {
+    function addPrice(uint direction, uint price) internal {
         uint priceArrayLength = limitOrderPriceArrayLength[direction];
         if (priceArrayLength == 0) {
             limitOrderPriceListMap[direction][0] = price;
@@ -56,10 +49,7 @@ contract PriceList {
         limitOrderPriceArrayLength[direction]++;
     }
 
-    function delPrice(
-        uint direction,
-        uint price)
-    internal {
+    function delPrice(uint direction, uint price) internal {
         (uint preIndex, uint nextIndex) = priceLocation(direction, price);
         require(price == nextIndex, 'Invalid price');
         limitOrderPriceListMap[direction][preIndex] = limitOrderPriceListMap[direction][nextIndex];
@@ -67,21 +57,11 @@ contract PriceList {
         limitOrderPriceArrayLength[direction]--;
     }
 
-    function nextPrice(
-        uint direction,
-        uint cur) //从0开始获取下一个价格，next为0时结束
-    internal
-    view
-    returns (uint next) {
+    function nextPrice(uint direction, uint cur) internal view returns (uint next) {
         next = limitOrderPriceListMap[direction][cur];
     }
 
-    function nextPriceWhenRemoveFirst(
-        uint direction,
-        uint cur)
-    internal
-    view
-    returns (uint next) {
+    function nextPriceWhenRemoveFirst(uint direction, uint cur) internal view returns (uint next) {
         next = limitOrderPriceListMap[direction][cur];
         next = next == 0 ? limitOrderPriceListMap[direction][0] : next;
     }
