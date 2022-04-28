@@ -28,17 +28,13 @@ library OrderBookLibrary {
     }
 
     //get quote amount with base amount at price --- y = x * p / x_decimal
-    function getQuoteAmountWithBaseAmountAtPrice(uint amountBase, uint price, uint baseDecimal)
-    internal
-    pure
+    function getQuoteAmountWithBaseAmountAtPrice(uint amountBase, uint price, uint baseDecimal) internal pure
     returns (uint amountGet) {
         amountGet = amountBase.mul(price).div(10 ** baseDecimal);
     }
 
     //get base amount with quote amount at price --- x = y * x_decimal / p
-    function getBaseAmountWithQuoteAmountAtPrice(uint amountQuote, uint price, uint baseDecimal)
-    internal
-    pure
+    function getBaseAmountWithQuoteAmountAtPrice(uint amountQuote, uint price, uint baseDecimal) internal pure
     returns (uint amountGet) {
         amountGet = amountQuote.mul(10 ** baseDecimal).div(price);
     }
@@ -63,8 +59,8 @@ library OrderBookLibrary {
     }
 
     // fetches and sorts the reserves for a pair
-    function getReserves(address pair, address tokenA, address tokenB) internal view returns
-    (uint112 reserveA, uint112 reserveB) {
+    function getReserves(address pair, address tokenA, address tokenB) internal view
+    returns (uint112 reserveA, uint112 reserveB) {
         require(tokenA != tokenB, 'IDENTICAL_ADDRESSES');
         address token0 = tokenA < tokenB ? tokenA : tokenB;
         require(token0 != address(0), 'ZERO_ADDRESS');
@@ -82,8 +78,8 @@ library OrderBookLibrary {
     // Make up for the LP price error caused by the loss of precision,
     // increase the LP price a bit, and ensure that the buy order price is less than or equal to the LP price
     function getFixAmountForMovePriceUp(uint _amountLeft, uint _amountAmmQuote,
-        uint reserveBase, uint reserveQuote, uint targetPrice, uint baseDecimal)
-    internal pure returns (uint amountLeft, uint amountAmmQuote, uint amountQuoteFix) {
+        uint reserveBase, uint reserveQuote, uint targetPrice, uint baseDecimal) internal pure
+    returns (uint amountLeft, uint amountAmmQuote, uint amountQuoteFix) {
         uint curPrice = getPrice(reserveBase, reserveQuote, baseDecimal);
         // y' = x.p2 - x.p1, x does not change, increase y, make the price bigger
         if (curPrice < targetPrice) {
@@ -101,8 +97,8 @@ library OrderBookLibrary {
     // Make up for the LP price error caused by the loss of precision,
     // reduce the LP price a bit, and ensure that the order price is greater than or equal to the LP price
     function getFixAmountForMovePriceDown(uint _amountLeft, uint _amountAmmBase,
-        uint reserveBase, uint reserveQuote, uint targetPrice, uint baseDecimal)
-    internal pure returns (uint amountLeft, uint amountAmmBase, uint amountBaseFix) {
+        uint reserveBase, uint reserveQuote, uint targetPrice, uint baseDecimal) internal pure
+    returns (uint amountLeft, uint amountAmmBase, uint amountBaseFix) {
         uint curPrice = getPrice(reserveBase, reserveQuote, baseDecimal);
         //x' = y/p1 - y/p2, y is unchanged, increasing x makes the price smaller
         if (curPrice > targetPrice) {
@@ -118,37 +114,26 @@ library OrderBookLibrary {
     }
 
     //sqrt(9*y*y + 3988000*x*y*price)
-    function getSection1ForPriceUp(uint reserveIn, uint reserveOut, uint price, uint decimal)
-    internal
-    pure
+    function getSection1ForPriceUp(uint reserveIn, uint reserveOut, uint price, uint baseDecimal) internal pure
     returns (uint section1) {
         section1 = Math.sqrt(reserveOut.mul(reserveOut).mul(9).add(reserveIn.mul(reserveOut).mul(3988000).mul
-        (price).div(10**decimal)));
+        (price).div(10** baseDecimal)));
     }
 
     //sqrt(9*x*x + 3988000*x*y/price)
-    function getSection1ForPriceDown(uint reserveIn, uint reserveOut, uint price, uint decimal)
-    internal
-    pure
+    function getSection1ForPriceDown(uint reserveIn, uint reserveOut, uint price, uint baseDecimal) internal pure
     returns (uint section1) {
         section1 = Math.sqrt(reserveIn.mul(reserveIn).mul(9).add(reserveIn.mul(reserveOut).mul(3988000).mul
-        (10**decimal).div(price)));
+        (10** baseDecimal).div(price)));
     }
 
     //amountIn = (sqrt(9*x*x + 3988000*x*y/price)-1997*x)/1994 = (sqrt(x*(9*x + 3988000*y/price))-1997*x)/1994
     //amountOut = y-(x+amountIn)*price
-    function getAmountForMovePrice(
-        uint direction,
-        uint amountIn,
-        uint reserveBase,
-        uint reserveQuote,
-        uint price,
-        uint decimal)
-    internal
-    pure
+    function getAmountForMovePrice(uint direction, uint amountIn, uint reserveBase, uint reserveQuote,
+        uint price, uint baseDecimal) internal pure
     returns (uint amountInLeft, uint amountBase, uint amountQuote, uint reserveBaseNew, uint reserveQuoteNew) {
         if (direction == LIMIT_BUY) {
-            uint section1 = getSection1ForPriceUp(reserveBase, reserveQuote, price, decimal);
+            uint section1 = getSection1ForPriceUp(reserveBase, reserveQuote, price, baseDecimal);
             uint section2 = reserveQuote.mul(1997);
             amountQuote = section1 > section2 ? (section1 - section2).div(1994) : 0;
             amountQuote = amountQuote > amountIn ? amountIn : amountQuote;
@@ -157,7 +142,7 @@ library OrderBookLibrary {
                 (amountIn - amountQuote, reserveBase - amountBase, reserveQuote + amountQuote);
         }
         else if (direction == LIMIT_SELL) {
-            uint section1 = getSection1ForPriceDown(reserveBase, reserveQuote, price, decimal);
+            uint section1 = getSection1ForPriceDown(reserveBase, reserveQuote, price, baseDecimal);
             uint section2 = reserveBase.mul(1997);
             amountBase = section1 > section2 ? (section1 - section2).div(1994) : 0;
             amountBase = amountBase > amountIn ? amountIn : amountBase;
@@ -172,18 +157,11 @@ library OrderBookLibrary {
 
     //amountIn = (sqrt(9*x*x + 3988000*x*y/price)-1997*x)/1994 = (sqrt(x*(9*x + 3988000*y/price))-1997*x)/1994
     //amountOut = y-(x+amountIn)*price
-    function getAmountForMovePriceWithAmountOut(
-        uint direction,
-        uint amountOut,
-        uint reserveBase,
-        uint reserveQuote,
-        uint price,
-        uint decimal)
-    internal
-    pure
+    function getAmountForMovePriceWithAmountOut(uint direction, uint amountOut, uint reserveBase, uint reserveQuote,
+        uint price, uint baseDecimal) internal pure
     returns (uint amountOutLeft, uint amountBase, uint amountQuote, uint reserveBaseNew, uint reserveQuoteNew) {
         if (direction == LIMIT_BUY) {
-            uint section1 = getSection1ForPriceUp(reserveBase, reserveQuote, price, decimal);
+            uint section1 = getSection1ForPriceUp(reserveBase, reserveQuote, price, baseDecimal);
             uint section2 = reserveQuote.mul(1997);
             amountQuote = section1 > section2 ? (section1 - section2).div(1994) : 0;
             amountBase = amountQuote == 0 ? 0 : getAmountOut(amountQuote, reserveQuote, reserveBase);
@@ -195,7 +173,7 @@ library OrderBookLibrary {
                 (amountOut - amountBase, reserveBase - amountBase, reserveQuote + amountQuote);
         }
         else if (direction == LIMIT_SELL) {
-            uint section1 = getSection1ForPriceDown(reserveBase, reserveQuote, price, decimal);
+            uint section1 = getSection1ForPriceDown(reserveBase, reserveQuote, price, baseDecimal);
             uint section2 = reserveBase.mul(1997);
             amountBase = section1 > section2 ? (section1 - section2).div(1994) : 0;
             amountQuote = amountBase == 0 ? 0 : getAmountOut(amountBase, reserveBase, reserveQuote);
@@ -213,19 +191,13 @@ library OrderBookLibrary {
 
     // get the output after taking the order using amountInOffer
     // The protocol fee should be included in the amountOutWithFee
-    function getAmountOutForTakePrice(
-        uint tradeDir,
-        uint amountInOffer,
-        uint price,
-        uint decimal,
-        uint protocolFeeRate,
-        uint subsidyFeeRate,
-        uint orderAmount)
-    internal pure returns (uint amountInUsed, uint amountOutWithFee, uint communityFee) {
+    function getAmountOutForTakePrice(uint tradeDir, uint amountInOffer, uint price, uint baseDecimal,
+        uint protocolFeeRate, uint subsidyFeeRate, uint orderAmount) internal pure
+    returns (uint amountInUsed, uint amountOutWithFee, uint communityFee) {
         uint fee;
         if (tradeDir == LIMIT_BUY) { //buy (quoteToken == tokenIn, swap quote token to base token)
             //amountOut = amountInOffer / price
-            uint amountOut = getBaseAmountWithQuoteAmountAtPrice(amountInOffer, price, decimal);
+            uint amountOut = getBaseAmountWithQuoteAmountAtPrice(amountInOffer, price, baseDecimal);
             if (amountOut.mul(10000) <= orderAmount.mul(10000-protocolFeeRate)) { //amountOut <= orderAmount * (1-0.3%)
                 amountInUsed = amountInOffer;
                 fee = amountOut.mul(protocolFeeRate).div(10000);
@@ -234,14 +206,14 @@ library OrderBookLibrary {
             else {
                 amountOut = orderAmount.mul(10000-protocolFeeRate).div(10000);
                 //amountIn = amountOutWithoutFee * price
-                amountInUsed = getQuoteAmountWithBaseAmountAtPrice(amountOut, price, decimal);
+                amountInUsed = getQuoteAmountWithBaseAmountAtPrice(amountOut, price, baseDecimal);
                 amountOutWithFee = orderAmount;
                 fee = amountOutWithFee.sub(amountOut);
             }
         }
         else if (tradeDir == LIMIT_SELL) { //sell (quoteToken == tokenOut, swap base token to quote token)
             //amountOut = amountInOffer * price ========= match limit buy order
-            uint amountOut = getQuoteAmountWithBaseAmountAtPrice(amountInOffer, price, decimal);
+            uint amountOut = getQuoteAmountWithBaseAmountAtPrice(amountInOffer, price, baseDecimal);
             if (amountOut.mul(10000) <= orderAmount.mul(10000-protocolFeeRate)) { //amountOut <= orderAmount * (1-0.3%)
                 amountInUsed = amountInOffer;
                 fee = amountOut.mul(protocolFeeRate).div(10000);
@@ -250,7 +222,7 @@ library OrderBookLibrary {
             else {
                 amountOut = orderAmount.mul(10000-protocolFeeRate).div(10000);
                 //amountIn = amountOutWithoutFee / price
-                amountInUsed = getBaseAmountWithQuoteAmountAtPrice(amountOut, price, decimal);
+                amountInUsed = getBaseAmountWithQuoteAmountAtPrice(amountOut, price, baseDecimal);
                 amountOutWithFee = orderAmount;
                 fee = amountOutWithFee - amountOut;
             }
@@ -261,15 +233,9 @@ library OrderBookLibrary {
     }
 
     //get the input after taking the order with amount out
-    function getAmountInForTakePrice(
-        uint tradeDir,
-        uint amountOutExpect,
-        uint price,
-        uint decimal,
-        uint protocolFeeRate,
-        uint subsidyFeeRate,
-        uint orderAmount)
-    internal pure returns (uint amountIn, uint amountOutWithFee, uint communityFee) {
+    function getAmountInForTakePrice(uint tradeDir, uint amountOutExpect, uint price, uint baseDecimal,
+        uint protocolFeeRate, uint subsidyFeeRate, uint orderAmount) internal pure
+    returns (uint amountIn, uint amountOutWithFee, uint communityFee) {
         uint orderProtocolFeeAmount = orderAmount.mul(protocolFeeRate).div(10000);
         uint orderSubsidyFeeAmount = orderProtocolFeeAmount.mul(subsidyFeeRate).div(100);
         uint orderAmountWithSubsidyFee = orderAmount.sub(orderProtocolFeeAmount.sub(orderSubsidyFeeAmount));
@@ -281,25 +247,17 @@ library OrderBookLibrary {
         }
         else {
             orderAmountWithSubsidyFee = amountOutExpect;
-            //amountOutWithFee * (1 - (protocolFeeRate / 10000 * subsidyFeeRate / 100) = orderAmountWithSubsidyFee
-            //=> amountOutWithFee = orderAmountWithSubsidyFee * 1000000 / (1000000 - protocolFeeRate *
-            //subsidyFeeRate)
             amountOutWithFee = orderAmountWithSubsidyFee.mul(1000000).div(1000000 - protocolFeeRate * subsidyFeeRate);
-            //amountOutWithoutFee = amountOutWithFee * (10000-protocolFeeRate) / 10000
-            //amountOutWithoutFee = (orderAmountWithSubsidyFee * 1000000 / (1000000 - protocolFeeRate *
-            //subsidyFeeRate)) * ((10000 - protocolFeeRate) / 10000)
-            //((orderAmountWithSubsidyFee * 1000000) * (10000 - protocolFeeRate)) / ((1000000 - protocolFeeRate *
-            //subsidyFeeRate) * 10000)
             amountOutWithoutFee = orderAmountWithSubsidyFee.mul(100).mul(10000 - protocolFeeRate).
                 div(1000000 - protocolFeeRate * subsidyFeeRate);
             communityFee = amountOutWithFee.sub(orderAmountWithSubsidyFee);
         }
 
         if (tradeDir == LIMIT_BUY) {
-            amountIn = getQuoteAmountWithBaseAmountAtPrice(amountOutWithoutFee, price, decimal);
+            amountIn = getQuoteAmountWithBaseAmountAtPrice(amountOutWithoutFee, price, baseDecimal);
         }
         else if (tradeDir == LIMIT_SELL) {
-            amountIn = getBaseAmountWithQuoteAmountAtPrice(amountOutWithoutFee, price, decimal);
+            amountIn = getBaseAmountWithQuoteAmountAtPrice(amountOutWithoutFee, price, baseDecimal);
         }
     }
 }

@@ -20,30 +20,30 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     bytes4 private constant SELECTOR_TRANSFER = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
-    //名称
+    //contract name
     string public constant name = 'HybridX OrderBook';
 
     //order book factory
-    address public factory;
+    address public override orderBookFactory;
 
-    //货币对
+    //pair address
     address public override pair;
 
-    //order NFT
-    address public orderNFT;
+    //order NFT address
+    address public override orderNFT;
 
-    //config
-    address public config;
+    //config address
+    address public override config;
 
-    //基础货币
+    //base token
     address public override baseToken;
-    //记价货币
+    //quote token
     address public override quoteToken;
 
-    //基础货币余额
-    uint public baseBalance;
-    //计价货币余额
-    uint public quoteBalance;
+    //base token balance record
+    uint public override baseBalance;
+    //quote token balance record
+    uint public override quoteBalance;
 
     receive() external payable {
     }
@@ -53,14 +53,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     // called once by the factory at time of deployment
-    function initialize(
-        address _pair,
-        address _baseToken,
-        address _quoteToken,
-        address _orderNFT,
-        address _config)
-    override
-    external {
+    function initialize(address _pair, address _baseToken, address _quoteToken, address _orderNFT, address _config)
+    override external {
         require(msg.sender == factory, 'FORBIDDEN'); // sufficient check
         (address token0, address token1) = (IPair(_pair).token0(), IPair(_pair).token1());
         require(
@@ -99,8 +93,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         quoteBalance = IERC20(quoteToken).balanceOf(address(this));
     }
 
-    function _safeTransfer(address token, address to, uint value)
-    internal {
+    function _safeTransfer(address token, address to, uint value) internal {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR_TRANSFER, to, value));
         require(success && (data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED');
     }
@@ -132,9 +125,11 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     function getPrice() public override view returns (uint price) {
         (uint112 reserveBase, uint112 reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
-        if (reserveBase != 0) {
-            price = reserveQuote.mul(10 ** baseDecimal()) / reserveBase;
-        }
+        price = OrderBookLibrary.getPrice(reserveBase, reserveQuote, baseDecimal());
+    }
+
+    function getReserves() external override view returns (uint112 reserveBase, uint112 reserveQuote) {
+        (reserveBase, reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
     }
 
     function priceDecimal() public override view returns (uint decimal) {
@@ -155,19 +150,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     //add limit order
-    function _addLimitOrder(
-        address _to,
-        uint _offer,
-        uint _remain,
-        uint _price,
-        uint _type)
-    internal
+    function _addLimitOrder(address _to, uint _offer, uint _remain, uint _price, uint _type) internal
     returns (uint orderId) {
-        IOrder.OrderDetail memory order = IOrder.OrderDetail(
-            _price,
-            _offer,
-            _remain,
-            uint8(_type));
+        IOrder.OrderDetail memory order = IOrder.OrderDetail(_price, _offer, _remain, uint8(_type));
         orderId = IOrder(orderNFT).mint(order, _to);
         if (length(_type, _price) == 0) {
             addPrice(_type, _price);
@@ -197,7 +182,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         IOrderNFT(orderNFT).burn(orderId);
 
         //remove price
-        if (length(order._type, order._price) == 0){
+        if (length(order._type, order._price) == 0) {
             delPrice(order._type, order._price);
         }
     }
@@ -216,7 +201,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     // listAgg
     function listAgg(uint direction, uint price) internal view returns (uint dataAgg) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
-        for (uint i=front; i<rear; i++) {
+        for (uint i = front; i < rear; i++) {
             dataAgg += IOrderNFT(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
         }
     }
@@ -239,7 +224,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         prices = new uint[](priceLength);
         amounts = new uint[](priceLength);
         uint curPrice = nextPrice(direction, 0);
-        uint32 index = 0;
+        uint32 index;
         while(curPrice != 0 && index < priceLength){
             prices[index] = curPrice;
             amounts[index] = listAgg(direction, curPrice);
@@ -316,10 +301,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
 
         if (refundBalance > 0) _safeTransfer(token, to, refundBalance);
-    }
-
-    function getReserves() external override view returns (uint112 reserveBase, uint112 reserveQuote) {
-        (reserveBase, reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
     }
 
     function _takeLimitOrder(
@@ -653,7 +634,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     /*******************************************************************************************************
-                                    called by uniswap v2 pair and router
+                                    called by pair and router
      *******************************************************************************************************/
     function getAmountOutForMovePrice(address tokenIn, uint amountInOffer)
     external
