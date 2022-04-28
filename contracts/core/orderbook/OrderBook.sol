@@ -46,6 +46,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     uint public override quoteBalance;
 
     receive() external payable {
+        address WETH = IConfig(config).WETH();
+        assert(WETH == msg.sender);
     }
 
     constructor() {

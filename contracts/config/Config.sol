@@ -37,9 +37,9 @@ contract Config is Ownable, IConfig {
     }
 
     function getOrderBookFactory() external view override returns (address) {
-        require(orderBookFactory != address(0), 'Order Book Factory Address not set');
         return orderBookFactory;
     }
+
     function setOrderBookFactory(address newOrderBookFactory) external override {
         require(orderBookFactory == address(0), 'Order Book Factory Address set already');
         orderBookFactory = newOrderBookFactory;
