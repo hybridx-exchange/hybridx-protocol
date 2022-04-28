@@ -194,7 +194,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         //remove order by id
         del(order._type, order._price, orderId);
         //remove order nft
-        IERC721Burnable(orderNFT).burn(orderId);
+        IOrderNFT(orderNFT).burn(orderId);
 
         //remove price
         if (length(order._type, order._price) == 0){
@@ -350,9 +350,6 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             }
 
             _removeFrontLimitOrderOfQueue(orderId, order);
-
-            //emit OrderClosed(order.owner, order.to, order.price, order.amountOffer, order
-            //.amountRemain, order.orderType);
             index++;
         }
 
@@ -383,7 +380,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     function _getAmountAndPay(
         address to,
-        uint direction,//TRADE DIRECTION
+        uint tradeDir,
         uint amountInOffer,
         uint price,
         uint orderAmount,
@@ -394,13 +391,13 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         uint amountOutWithFee;
         uint communityFee;
         (amountIn, amountOutWithFee, communityFee, accounts, amounts) =
-            _getAmountAndTake(direction, amountInOffer, price, orderAmount);
+            _getAmountAndTake(tradeDir, amountInOffer, price, orderAmount);
         amounts = Arrays.extendUint(amounts, _amounts);
         accounts = Arrays.extendAddress(accounts, _accounts);
         amountOutWithSubsidyFee = amountOutWithFee.sub(communityFee);
 
         //当token为weth时，外部调用的时候直接将weth转出
-        address tokenOut = direction == LIMIT_BUY ? baseToken : quoteToken;
+        address tokenOut = tradeDir == LIMIT_BUY ? baseToken : quoteToken;
         _safeTransfer(tokenOut, to, amountOutWithSubsidyFee);
     }
 
@@ -481,7 +478,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
                 amountLeft = amountLeft.sub(amountInForTake);
             }
 
-                price = nextPriceWhenRemoveFirst(LIMIT_SELL, price);
+            price = nextPriceWhenRemoveFirst(LIMIT_SELL, price);
         }
 
         // send the user for take all limit order's amount.
@@ -504,7 +501,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             }
 
             _ammSwapPrice(to, quoteToken, baseToken, amountAmmQuote, amountAmmBase);
-            require(amountLeft == 0 || getPrice() >= targetPrice, "Buy price mismatch");
+            require(amountLeft == 0 || getPrice() >= targetPrice, "buy to target price failed");
         }
     }
 
@@ -583,7 +580,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             }
 
             _ammSwapPrice(to, baseToken, quoteToken, amountAmmBase, amountAmmQuote);
-            require(amountLeft == 0 || getPrice() <= targetPrice, "sell to target failed");
+            require(amountLeft == 0 || getPrice() <= targetPrice, "sell to target price failed");
         }
     }
 
@@ -603,17 +600,13 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         //get input amount of quote token for buy limit order
         uint balance = _getQuoteBalance();
         uint amountOffer = balance > quoteBalance ? balance - quoteBalance : 0;
-        //uint minQuoteAmount = OrderBookLibrary.getQuoteAmountWithBaseAmountAtPrice(minAmount, price, baseDecimal);
-        //require(amountOffer >= minQuoteAmount, 'Amount Invalid');
 
         IPair(pair).skim(user);
         uint amountRemain = _movePriceUp(amountOffer, price, to);
         if (amountRemain != 0) {
             orderId = _addLimitOrder(to, amountOffer, amountRemain, price, LIMIT_BUY);
-            //emit OrderCreated(user, to, amountOffer, amountRemain, price, LIMIT_BUY);
         }
 
-        //update balance
         _updateBalance();
     }
 
@@ -633,16 +626,13 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         //get input amount of base token for sell limit order
         uint balance = _getBaseBalance();
         uint amountOffer = balance > baseBalance ? balance - baseBalance : 0;
-        //require(amountOffer >= minAmount, 'Amount Invalid');
 
         IPair(pair).skim(user);
         uint amountRemain = _movePriceDown(amountOffer, price, to);
         if (amountRemain != 0) {
             orderId = _addLimitOrder(to, amountOffer, amountRemain, price, LIMIT_SELL);
-            //emit OrderCreated(user, to, amountOffer, amountRemain, price, LIMIT_SELL);
         }
 
-        //update balance
         _updateBalance();
     }
 
