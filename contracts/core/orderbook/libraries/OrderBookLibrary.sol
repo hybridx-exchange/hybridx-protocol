@@ -15,12 +15,7 @@ library OrderBookLibrary {
     uint internal constant LIMIT_SELL = 2;
 
     function getOppositeDirection(uint direction) internal pure returns (uint opposite){
-        if (LIMIT_BUY == direction) {
-            opposite = LIMIT_SELL;
-        }
-        else if (LIMIT_SELL == direction) {
-            opposite = LIMIT_BUY;
-        }
+        opposite = direction == LIMIT_BUY ? LIMIT_SELL : direction == LIMIT_SELL ? LIMIT_BUY : 0;
     }
 
     function getAdmin(address factory) internal view returns (address admin){
