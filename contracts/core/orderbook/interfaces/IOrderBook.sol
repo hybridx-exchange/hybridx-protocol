@@ -27,6 +27,20 @@ interface IOrderBook {
     //get pair address
     function pair() external view returns (address);
 
+    //get order book factory address
+    function orderBookFactory() external view returns (address);
+
+    //get config address
+    function config() external view returns (address);
+
+    //get order nft address
+    function orderNFT() external view returns (address);
+
+    //get base token balance record
+    function baseBalance() external view returns (uint);
+    //get base token balance record
+    function quoteBalance() external view returns (uint);
+
     //get base token decimal
     function baseDecimal() external view returns (uint);
     //get price decimal
