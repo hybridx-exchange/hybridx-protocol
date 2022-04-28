@@ -32,8 +32,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //order NFT
     address public orderNFT;
 
-    //基准代币小数点位数，用于通过价格计算数量
-    uint public override baseDecimal;
+    //config
+    address public config;
 
     //基础货币
     address public override baseToken;
@@ -57,7 +57,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         address _pair,
         address _baseToken,
         address _quoteToken,
-        address _orderNFT)
+        address _orderNFT,
+        address _config)
     override
     external {
         require(msg.sender == factory, 'FORBIDDEN'); // sufficient check
@@ -69,27 +70,20 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         pair = _pair;
         orderNFT = _orderNFT;
+        config = _config;
         baseToken = _baseToken;
         quoteToken = _quoteToken;
-        baseDecimal = IERC20(_baseToken).decimals();
     }
 
     function reverse() external override {
         require(priceLength(LIMIT_BUY) == 0 && priceLength(LIMIT_SELL) == 0,
             'Order Exist');
         (baseToken, quoteToken) = (quoteToken, baseToken);
-        baseDecimal = IERC20(baseToken).decimals();
     }
 
     function _getFeeRate() internal view returns (uint protocolFeeRate, uint subsidyFeeRate) {
-        address configAddress = IOrderBookFactory(factory).config();
-        return (IConfig(configAddress).protocolFeeRate(address(this)),
-                IConfig(configAddress).subsidyFeeRate(address(this)));
-    }
-
-    function _getPriceStep() internal view returns (uint priceStep) {
-        address configAddress = IOrderBookFactory(factory).config();
-        return IConfig(configAddress).priceStep(address(this), getPrice());
+        return (IConfig(config).protocolFeeRate(address(this)),
+                IConfig(config).subsidyFeeRate(address(this)));
     }
 
     function _getBaseBalance() internal view returns (uint balance) {
@@ -136,34 +130,31 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         unlocked = 1;
     }
 
-    function getPrice()
-    public
-    override
-    view
-    returns (uint price) {
+    function getPrice() public override view returns (uint price) {
         (uint112 reserveBase, uint112 reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
         if (reserveBase != 0) {
-            price = reserveQuote.mul(10 ** baseDecimal) / reserveBase;
+            price = reserveQuote.mul(10 ** baseDecimal()) / reserveBase;
         }
     }
 
-    function priceDecimal()
-    public
-    override
-    view
-    returns (uint decimal) {
+    function priceDecimal() public override view returns (uint decimal) {
         decimal = IERC20(quoteToken).decimals();
     }
 
-    function getDirection(address tokenIn)
-    internal
-    view
-    returns (uint tradeDir, uint orderDir) {
+    function baseDecimal() public override view returns (uint decimal) {
+        decimal = IERC20(baseToken).decimals();
+    }
+
+    function priceStep(uint price) public override view returns (uint step) {
+        step = IConfig(config).priceStep(address(this), price);
+    }
+
+    function getDirection(address tokenIn) internal view returns (uint tradeDir, uint orderDir) {
         tradeDir = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
         orderDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
     }
 
-    //添加order对象
+    //add limit order
     function _addLimitOrder(
         address _to,
         uint _offer,
@@ -185,7 +176,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         push(_type, _price, orderId);
     }
 
-    //删除order对象
+    //remove limit order from front of queue
     function _removeFrontLimitOrderOfQueue(uint orderId, IOrder.OrderDetail memory order) internal {
         // pop order from queue of same price
         pop(order._type, order._price);
@@ -198,26 +189,21 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
     }
 
-    //删除order对象
+    //remove limit order by order id
     function _removeLimitOrder(uint orderId, IOrder.OrderDetail memory order) internal {
-        //删除队列订单
+        //remove order by id
         del(order._type, order._price, orderId);
-        //删除全局订单
+        //remove order nft
         IERC721Burnable(orderNFT).burn(orderId);
 
-        //删除价格
+        //remove price
         if (length(order._type, order._price) == 0){
             delPrice(order._type, order._price);
         }
     }
 
     // list
-    function list(
-        uint direction,
-        uint price)
-    internal
-    view
-    returns (uint[] memory allData) {
+    function list(uint direction, uint price) internal view returns (uint[] memory allData) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
         if (front < rear){
             allData = new uint[](rear - front);
@@ -228,12 +214,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     // listAgg
-    function listAgg(
-        uint direction,
-        uint price)
-    internal
-    view
-    returns (uint dataAgg) {
+    function listAgg(uint direction, uint price) internal view returns (uint dataAgg) {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
         for (uint i=front; i<rear; i++) {
             dataAgg += IOrderNFT(orderNFT).get(limitOrderQueueMap[direction][price][i])._remain;
@@ -241,10 +222,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     // total amount
-    function totalOrderAmount(uint direction)
-    internal
-    view
-    returns (uint amount)
+    function totalOrderAmount(uint direction) internal view returns (uint amount)
     {
         uint curPrice = nextPrice(direction, 0);
         while(curPrice != 0){
@@ -253,14 +231,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
     }
 
-    //订单薄，不关注订单具体信息，只用于查询
-    function marketBook(
-        uint direction,
-        uint32 maxSize)
-    external
-    override
-    view
-    returns (uint[] memory prices, uint[] memory amounts) {
+    //order book list
+    function marketBook(uint direction, uint32 maxSize) external override view
+        returns (uint[] memory prices, uint[] memory amounts) {
         uint priceLength = priceLength(direction);
         priceLength =  priceLength > maxSize ? maxSize : priceLength;
         prices = new uint[](priceLength);
@@ -275,12 +248,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
     }
 
-    //获取某个价格内的订单薄
-    function rangeBook(uint direction, uint price)
-    external
-    override
-    view
-    returns (uint[] memory prices, uint[] memory amounts) {
+    //order book of price range current price and target price
+    function rangeBook(uint direction, uint price) external override view
+        returns (uint[] memory prices, uint[] memory amounts) {
         uint curPrice = nextPrice(direction, 0);
         uint priceLength;
         if (direction == LIMIT_BUY) {
@@ -310,41 +280,24 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
     }
 
-    //用于遍历所有订单
-    function nextOrder(
-        uint direction,
-        uint cur)
-    internal
-    view
-    returns (uint next, uint[] memory amounts) {
+    function nextOrder(uint direction, uint cur) internal view returns (uint next, uint[] memory amounts) {
         next = nextPrice(direction, cur);
         amounts = list(direction, next);
     }
 
-    //用于遍历所有订单薄
-    function nextBook(
-        uint direction,
-        uint cur)
-    internal
-    view
-    returns (uint next, uint amount) {
+    function nextBook(uint direction, uint cur) internal view returns (uint next, uint amount) {
         next = nextPrice(direction, cur);
         amount = listAgg(direction, next);
     }
 
-    function nextBookWhenRemoveFirst(
-        uint direction,
-        uint cur)
-    internal
-    view
-    returns (uint next, uint amount) {
+    function nextBookWhenRemoveFirst(uint direction, uint cur) internal view returns (uint next, uint amount) {
         next = nextPriceWhenRemoveFirst(direction, cur);
         amount = listAgg(direction, next);
     }
 
     //Return funds that were transferred into the contract by mistake
     function safeRefund(address token, address payable to) external override lock {
-        require(msg.sender == OrderBookLibrary.getAdmin(factory), "Forbidden");
+        require(msg.sender == OrderBookLibrary.getOwner(factory), "Forbidden");
         if (token == address(0)) {
             uint ethBalance = address(this).balance;
             if (ethBalance > 0) to.transfer(ethBalance);
@@ -365,11 +318,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         if (refundBalance > 0) _safeTransfer(token, to, refundBalance);
     }
 
-    function getReserves()
-    external
-    override
-    view
-    returns (uint112 reserveBase, uint112 reserveQuote) {
+    function getReserves() external override view returns (uint112 reserveBase, uint112 reserveQuote) {
         (reserveBase, reserveQuote) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
     }
 
@@ -427,7 +376,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         address[] memory accountsTo, uint[] memory amountsTo) {
         (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
         (amountIn, amountOutWithFee, communityFee) = OrderBookLibrary.getAmountOutForTakePrice
-            (direction, amountInOffer, price, baseDecimal, protocolFeeRate, subsidyFeeRate, orderAmount);
+            (direction, amountInOffer, price, baseDecimal(), protocolFeeRate, subsidyFeeRate, orderAmount);
         (accountsTo, amountsTo) = _takeLimitOrder
             (OrderBookLibrary.getOppositeDirection(direction), amountIn, amountOutWithFee, price);
     }
@@ -495,7 +444,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         uint[] memory reserves = new uint[](4);//[reserveBase, reserveQuote, reserveBaseTmp, reserveQuoteTmp]
         (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
         (reserves[2], reserves[3]) = (reserves[0], reserves[1]);
-        bool liquidityExists = reserves[0] > 0 && reserves[1] > 0;
+        uint decimal = baseDecimal();
         uint amountAmmBase;
         uint amountAmmQuote;
         uint amountOrderBookOut;
@@ -505,10 +454,10 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         while (price != 0 && price <= targetPrice) {
             uint amountAmmLeft = amountLeft;
             //skip if there is no liquidity in lp pool
-            if (liquidityExists) {
+            if (reserves[0] > 0 && reserves[1] > 0) {
                 (amountAmmLeft, amountAmmBase, amountAmmQuote, reserves[2], reserves[3]) =
                     OrderBookLibrary.getAmountForMovePrice(LIMIT_BUY, amountLeft,
-                        reserves[0], reserves[1], price, baseDecimal);
+                        reserves[0], reserves[1], price, decimal);
                 if (amountAmmLeft == 0) {
                     amountLeft = 0; //avoid getAmountForMovePrice recalculation
                     break;
@@ -541,17 +490,17 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
 
         // swap to target price when there is no limit order less than the target price
-        if (liquidityExists && amountLeft > 0 && price != targetPrice) {
+        if ((reserves[0] > 0 && reserves[1] > 0) && amountLeft > 0 && price != targetPrice) {
             (amountLeft, amountAmmBase, amountAmmQuote, reserves[2], reserves[3]) =
             OrderBookLibrary.getAmountForMovePrice(LIMIT_BUY, amountLeft,
-            reserves[0], reserves[1], targetPrice, baseDecimal);
+            reserves[0], reserves[1], targetPrice, decimal);
         }
 
         if (amountAmmQuote > 0) {
             if (amountLeft > 0) {
                 (amountLeft, amountAmmQuote,) =
                     OrderBookLibrary.getFixAmountForMovePriceUp(amountLeft, amountAmmQuote, reserves[2], reserves[3],
-                        targetPrice, baseDecimal);
+                        targetPrice, decimal);
             }
 
             _ammSwapPrice(to, quoteToken, baseToken, amountAmmQuote, amountAmmBase);
@@ -574,8 +523,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         uint[] memory reserves = new uint[](4);//[reserveBase, reserveQuote, reserveBaseTmp, reserveQuoteTmp]
         (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
         (reserves[2], reserves[3]) = (reserves[0], reserves[1]);
+        uint decimal = baseDecimal();
         amountLeft = amountOffer;
-        bool liquidityExists = reserves[0] > 0 && reserves[1] > 0;
         uint amountAmmBase;
         uint amountAmmQuote;
         uint amountOrderBookOut;
@@ -584,10 +533,10 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         while (price != 0 && price >= targetPrice) {
             uint amountAmmLeft = amountLeft;
             //skip if there is no liquidity in lp pool
-            if (liquidityExists) {
+            if (reserves[0] > 0 && reserves[1] > 0) {
                 (amountAmmLeft, amountAmmBase, amountAmmQuote, reserves[2], reserves[3]) =
                 OrderBookLibrary.getAmountForMovePrice(LIMIT_SELL, amountLeft,
-                reserves[0], reserves[1], price, baseDecimal);
+                reserves[0], reserves[1], price, decimal);
                 if (amountAmmLeft == 0) {
                     amountLeft = 0;  //avoid getAmountForMovePrice recalculation
                     break;
@@ -620,17 +569,17 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         }
 
         // swap to target price when there is no limit order less than the target price
-        if (liquidityExists && amountLeft > 0 && price != targetPrice) {
+        if ((reserves[0] > 0 && reserves[1] > 0) && amountLeft > 0 && price != targetPrice) {
             (amountLeft, amountAmmBase, amountAmmQuote, reserves[2], reserves[3]) =
                 OrderBookLibrary.getAmountForMovePrice(LIMIT_SELL, amountLeft,
-                    reserves[0], reserves[1], targetPrice, baseDecimal);
+                    reserves[0], reserves[1], targetPrice, decimal);
         }
 
         if (amountAmmBase > 0) {
             if (amountLeft > 0) {
                 (amountLeft, amountAmmBase,) =
                     OrderBookLibrary.getFixAmountForMovePriceDown(amountLeft, amountAmmBase, reserves[2], reserves[3],
-                        targetPrice, baseDecimal);
+                        targetPrice, decimal);
             }
 
             _ammSwapPrice(to, baseToken, quoteToken, amountAmmBase, amountAmmQuote);
@@ -647,8 +596,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     lock
     returns (uint orderId) {
-        //require(price > 0 && price % priceStep == 0, 'Price Invalid');
-        require(OrderBookLibrary.getUniswapV2OrderBookFactory(factory) == factory,
+        require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
+        require(OrderBookLibrary.getPairOrderBookFactory(factory) == factory,
             'OrderBook unconnected');
 
         //get input amount of quote token for buy limit order
@@ -677,8 +626,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     lock
     returns (uint orderId) {
-        //require(price > 0 && (price % priceStep) == 0, 'Price Invalid');
-        require(OrderBookLibrary.getUniswapV2OrderBookFactory(factory) == factory,
+        require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
+        require(OrderBookLibrary.getPairOrderBookFactory(factory) == factory,
             'OrderBook unconnected');
 
         //get input amount of base token for sell limit order
@@ -721,10 +670,11 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountOutGet, uint nextReserveBase, uint nextReserveQuote) {
-        uint[] memory params = new uint[](6);
+        uint[] memory params = new uint[](7);
         (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
         (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
         (params[4], params[5]) = getDirection(tokenIn);//tradeDir - orderDir
+        params[6] = baseDecimal();
         uint amountInLeft = amountInOffer;
         amountOutGet = 0;
         (uint price, uint amount) = nextBook(params[5], 0);
@@ -732,15 +682,14 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             //先计算pair从当前价格到price消耗amountIn的数量
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
-                OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1], price,
-                    baseDecimal);
+                OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1], price, params[6]);
             if (amountAmmLeft == 0) {
                 break;
             }
 
             //计算消耗掉一个价格的挂单需要的amountIn数量
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountOutForTakePrice(
-                params[4], amountAmmLeft, price, baseDecimal, params[2], params[3], amount);
+                params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
             amountOutGet += amountOutWithFee.sub(communityFee);
             amountInLeft = amountInLeft.sub(amountInForTake);
             if (amountInForTake == amountAmmLeft) {
@@ -762,10 +711,11 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     override
     view
     returns (uint amountInGet, uint nextReserveBase, uint nextReserveQuote) {
-        uint[] memory params = new uint[](6);
+        uint[] memory params = new uint[](7);
         (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
         (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
         (params[5], params[4]) = getDirection(tokenOut);//orderDir - tradeDir
+        params[6] = baseDecimal();
         uint amountOutLeft = amountOutOffer;
         amountInGet = 0;
         (uint price, uint amount) = nextBook(params[5], 0);
@@ -774,14 +724,14 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             uint amountAmmLeft;
             (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
                 OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
-                    price, baseDecimal);
+                    price, params[6]);
             if (amountAmmLeft == 0) {
                 break;
             }
 
             //计算消耗掉一个价格的挂单需要的amountOut数量
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountInForTakePrice
-                (params[4], amountAmmLeft, price, baseDecimal, params[2], params[3], amount);
+                (params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
             amountInGet += amountInForTake.add(1);
             amountOutLeft = amountOutLeft.sub(amountOutWithFee.sub(communityFee));
             if (amountOutWithFee == amountAmmLeft) {
@@ -810,7 +760,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         //direction for tokenA swap to tokenB
         (uint tradeDir, uint orderDir) = getDirection(tokenIn);
-
+        uint decimal = baseDecimal();
         (uint price, uint amount) = nextBook(orderDir, 0); // 订单方向与交易方向相反
         //只处理挂单，reserveIn/reserveOut只用来计算需要消耗的挂单数量和价格范围
         while (price != 0) {
@@ -822,7 +772,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
                 reserves[0],
                 reserves[1],
                 price,
-                baseDecimal);
+                decimal);
             if (amountAmmLeft == 0) {
                 break;
             }

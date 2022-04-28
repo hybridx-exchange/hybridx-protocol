@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IOrderBook {
     //order book contract init function
-    function initialize(address _pair, address _baseToken, address _quoteToken, address _orderNFT) external;
+    function initialize(address _pair, address _baseToken, address _quoteToken, address _orderNFT, address _config) external;
 
     function reverse() external;
 
@@ -31,6 +31,8 @@ interface IOrderBook {
     function baseDecimal() external view returns (uint);
     //get price decimal
     function priceDecimal() external view returns (uint);
+    //get price step
+    function priceStep(uint price) external view returns (uint);
 
     //base token -- eg: btc
     function baseToken() external view returns (address);

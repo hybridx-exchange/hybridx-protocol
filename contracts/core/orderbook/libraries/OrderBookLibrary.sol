@@ -5,6 +5,7 @@ import "../interfaces/IOrderBook.sol";
 import "../interfaces/IOrderBookFactory.sol";
 import "../../pair/interfaces/IPairFactory.sol";
 import "../../pair/interfaces/IPair.sol";
+import "../../../deps/access/Ownable.sol";
 import "../../../deps/libraries/Math.sol";
 import "../../../deps/libraries/SafeMath.sol";
 
@@ -18,11 +19,11 @@ library OrderBookLibrary {
         opposite = direction == LIMIT_BUY ? LIMIT_SELL : direction == LIMIT_SELL ? LIMIT_BUY : 0;
     }
 
-    function getAdmin(address factory) internal view returns (address admin){
-        admin = IPairFactory(IOrderBookFactory(factory).pairFactory()).admin();
+    function getOwner(address factory) internal view returns (address owner){
+        owner = Ownable(IOrderBookFactory(factory).config()).owner();
     }
 
-    function getUniswapV2OrderBookFactory(address factory) internal view returns (address factoryRet){
+    function getPairOrderBookFactory(address factory) internal view returns (address factoryRet){
         factoryRet = IPairFactory(IOrderBookFactory(factory).pairFactory()).getOrderBookFactory();
     }
 

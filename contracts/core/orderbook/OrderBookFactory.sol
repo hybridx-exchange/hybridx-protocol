@@ -91,7 +91,7 @@ contract OrderBookFactory is IOrderBookFactory {
             orderBook := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
 
-        IOrderBook(orderBook).initialize(pair, baseToken, quoteToken, getOrderNFT[token0][token1]);
+        IOrderBook(orderBook).initialize(pair, baseToken, quoteToken, getOrderNFT[token0][token1], config);
         (getOrderBook[token0][token1], getOrderBook[token1][token0]) = (orderBook, orderBook);
         allOrderBooks.push(orderBook);
         emit OrderBookCreated(pair, baseToken, quoteToken, orderBook);
