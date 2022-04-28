@@ -190,10 +190,10 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         // pop order from queue of same price
         pop(order._type, order._price);
         // delete order from market orders
-        IERC721Burnable(orderNFT).burn(orderId);
+        IOrderNFT(orderNFT).burn(orderId);
 
         //delete price
-        if (length(order._type, order._price) == 0){
+        if (length(order._type, order._price) == 0) {
             delPrice(order._type, order._price);
         }
     }

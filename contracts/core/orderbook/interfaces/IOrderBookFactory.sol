@@ -6,6 +6,8 @@ interface IOrderBookFactory {
     function pairFactory() external view returns (address);
     function config() external view returns (address);
     function getOrderNFT(address tokenA, address tokenB) external view returns (address orderNFT);
+    function allOrderNFTs(uint) external view returns (address orderNFT);
+    function allOrderNFTLength() external view returns (uint length);
     function getOrderBook(address tokenA, address tokenB) external view returns (address orderBook);
     function allOrderBooks(uint) external view returns (address orderBook);
     function allOrderBookLength() external view returns (uint length);

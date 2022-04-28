@@ -11,12 +11,14 @@ import "../deps/access/Ownable.sol";
 contract OrderBookFactory is IOrderBookFactory {
     mapping(address => mapping(address => address)) public override getOrderNFT;
     mapping(address => mapping(address => address)) public override getOrderBook;
+    address[] public override allOrderNFTs;
     address[] public override allOrderBooks;
     address public override pairFactory;
     address public override WETH;
     address public override config;
 
     event OrderBookCreated(address, address, address, address);
+    event OrderNFTCreated(address, address, address, address);
 
     constructor(address _pairFactory, address _WETH, address _config) {
         (pairFactory, WETH, config) = (_pairFactory, _WETH, _config);
@@ -24,6 +26,10 @@ contract OrderBookFactory is IOrderBookFactory {
 
     function allOrderBookLength() external override view returns (uint) {
         return allOrderBooks.length;
+    }
+
+    function allOrderNFTLength() external override view returns (uint) {
+        return allOrderNFTs.length;
     }
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
@@ -63,6 +69,8 @@ contract OrderBookFactory is IOrderBookFactory {
 
         IOrder(orderNFT).initialize(Ownable(config).owner(), orderBook);
         (getOrderNFT[token0][token1], getOrderNFT[token1][token0]) = (orderNFT, orderNFT);
+        allOrderNFTs.push(orderNFT);
+        emit OrderNFTCreated(orderBook, baseToken, quoteToken, orderNFT);
     }
 
     //create order book

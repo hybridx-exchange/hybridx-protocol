@@ -12,6 +12,5 @@ interface IOrder {
     function add(uint256 tokenId, uint256 amount) external;
     function mint(OrderDetail memory orderDetail, address to) external returns (uint256 tokenId);
     function sub(uint256 tokenId, uint256 amount) external;
-    //function burn(uint256 tokenId) external;
     function get(uint256 tokenId) external view returns (OrderDetail memory order);
 }
