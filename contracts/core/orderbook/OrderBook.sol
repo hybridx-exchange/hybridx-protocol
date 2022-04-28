@@ -11,7 +11,11 @@ import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
 import "./OrderQueue.sol";
 import "./PriceList.sol";
-
+/**************************************************************************************************************
+@title                          order book for hybrid protocol
+@author                         https://twitter.com/cherideal
+@ens                            cherideal.eth
+**************************************************************************************************************/
 contract OrderBook is IOrderBook, OrderQueue, PriceList {
     using SafeMath for uint;
     using SafeMath for uint112;
@@ -527,7 +531,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //limit order for buy base token with quote token
     function createBuyLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
         require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        IConfig(config).getOrderBookFactory();
+        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'Pair Not Connected');
 
         //get input amount of quote token for buy limit order
         uint balance = _getQuoteBalance();
@@ -545,7 +549,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //limit order for sell base token to quote token
     function createSellLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
         require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        IConfig(config).getOrderBookFactory();
+        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'Pair Not Connected');
 
         //get input amount of base token for sell limit order
         uint balance = _getBaseBalance();

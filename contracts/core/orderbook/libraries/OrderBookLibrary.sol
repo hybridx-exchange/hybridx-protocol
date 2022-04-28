@@ -279,12 +279,11 @@ library OrderBookLibrary {
         //get sell limit orders within a price range
         (uint[] memory priceArray, uint[] memory amountArray) =
             IOrderBook(orderBook).rangeBook(OrderBookLibrary.LIMIT_SELL, price);
-        address config = IOrderBook(orderBook).config();
         uint[] memory params = new uint[](5);
         (params[0], params[1], params[2], params[3], params[4]) = (
             IOrderBook(orderBook).baseDecimal(),
-            IConfig(config).protocolFeeRate(orderBook),
-            IConfig(config).subsidyFeeRate(orderBook),
+            IConfig(IOrderBook(orderBook).config()).protocolFeeRate(orderBook),
+            IConfig(IOrderBook(orderBook).config()).subsidyFeeRate(orderBook),
             reserveBase,
             reserveQuote);
 
@@ -370,12 +369,11 @@ library OrderBookLibrary {
         //get buy limit orders within a price range
         (uint[] memory priceArray, uint[] memory amountArray) =
             IOrderBook(orderBook).rangeBook(OrderBookLibrary.LIMIT_BUY, price);
-        address config = IOrderBook(orderBook).config();
         uint[] memory params = new uint[](5);
         (params[0], params[1], params[2], params[3], params[4]) = (
             IOrderBook(orderBook).baseDecimal(),
-            IConfig(config).protocolFeeRate(orderBook),
-            IConfig(config).subsidyFeeRate(orderBook),
+            IConfig(IOrderBook(orderBook).config()).protocolFeeRate(orderBook),
+            IConfig(IOrderBook(orderBook).config()).subsidyFeeRate(orderBook),
             reserveBase,
             reserveQuote);
         amounts = new uint[](8);

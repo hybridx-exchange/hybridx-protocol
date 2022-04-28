@@ -4,6 +4,11 @@ pragma solidity ^0.8.0;
 import "../deps/access/Ownable.sol";
 import "./interfaces/IConfig.sol";
 
+/**************************************************************************************************************
+@title                          config for hybrid protocol
+@author                         https://twitter.com/cherideal
+@ens                            cherideal.eth
+**************************************************************************************************************/
 contract Config is Ownable, IConfig {
     uint public priceStepFactor = 1;          // default is 1 / 10000
     uint public defaultProtocolFeeRate = 30;  // default is 30 / 10000

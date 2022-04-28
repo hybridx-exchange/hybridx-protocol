@@ -7,7 +7,11 @@ import "./interfaces/IOrder.sol";
 import "./interfaces/IOrderBook.sol";
 import "./interfaces/IOrderBookFactory.sol";
 import "../deps/access/Ownable.sol";
-
+/**************************************************************************************************************
+@title                          factory for hybrid order book
+@author                         https://twitter.com/cherideal
+@ens                            cherideal.eth
+**************************************************************************************************************/
 contract OrderBookFactory is IOrderBookFactory {
     mapping(address => mapping(address => address)) public override getOrderNFT;
     mapping(address => mapping(address => address)) public override getOrderBook;
