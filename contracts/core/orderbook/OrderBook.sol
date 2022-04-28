@@ -6,7 +6,6 @@ import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "../../deps/libraries/Arrays.sol";
-import "../../config/interfaces/IConfig.sol";
 import "./interfaces/IOrderNFT.sol";
 import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
@@ -96,7 +95,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     }
 
     function _batchTransfer(address token, address[] memory accounts, uint[] memory amounts) internal {
-        address WETH = IOrderBookFactory(orderBookFactory).WETH();
+        address WETH = IConfig(config).WETH();
         for(uint i=0; i<accounts.length; i++) {
             _singleTransfer(WETH, token, accounts[i], amounts[i]);
         }
@@ -368,7 +367,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         (uint amount0Out, uint amount1Out) = tokenOut == IPair(pair).token1() ?
             (uint(0), amountAmmOut) : (amountAmmOut, uint(0));
 
-        address WETH = IOrderBookFactory(orderBookFactory).WETH();
+        address WETH = IConfig(config).WETH();
         if (WETH == tokenOut) {
             IPair(pair).swapOriginal(amount0Out, amount1Out, address(this), new bytes(0));
             IWETH(WETH).withdraw(amountAmmOut);
@@ -431,14 +430,14 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(IOrderBookFactory(orderBookFactory).WETH(), baseToken, to, amountOrderBookOut);
+            _singleTransfer(IConfig(config).WETH(), baseToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
         if ((reserves[0] > 0 && reserves[1] > 0) && amountLeft > 0 && price != targetPrice) {
             (amountLeft, amountAmmBase, amountAmmQuote, reserves[2], reserves[3]) =
-            OrderBookLibrary.getAmountForMovePrice(LIMIT_BUY, amountLeft,
-            reserves[0], reserves[1], targetPrice, decimal);
+                OrderBookLibrary.getAmountForMovePrice(LIMIT_BUY, amountLeft,
+                    reserves[0], reserves[1], targetPrice, decimal);
         }
 
         if (amountAmmQuote > 0) {
@@ -503,7 +502,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(IOrderBookFactory(orderBookFactory).WETH(), quoteToken, to, amountOrderBookOut);
+            _singleTransfer(IConfig(config).WETH(), quoteToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
@@ -528,8 +527,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //limit order for buy base token with quote token
     function createBuyLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
         require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        require(OrderBookLibrary.getPairOrderBookFactory(orderBookFactory) == orderBookFactory,
-            'OrderBook unconnected');
+        IConfig(config).getOrderBookFactory();
 
         //get input amount of quote token for buy limit order
         uint balance = _getQuoteBalance();
@@ -547,8 +545,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     //limit order for sell base token to quote token
     function createSellLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
         require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        require(OrderBookLibrary.getPairOrderBookFactory(orderBookFactory) == orderBookFactory,
-            'OrderBook unconnected');
+        IConfig(config).getOrderBookFactory();
 
         //get input amount of base token for sell limit order
         uint balance = _getBaseBalance();
@@ -571,7 +568,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         //refund
         address token = o._type == LIMIT_BUY ? quoteToken : baseToken;
-        _singleTransfer(IOrderBookFactory(orderBookFactory).WETH(), token, to, o._remain);
+        _singleTransfer(IConfig(config).WETH(), token, to, o._remain);
 
         //update token balance
         uint balance = IERC20(token).balanceOf(address(this));

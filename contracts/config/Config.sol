@@ -11,14 +11,52 @@ contract Config is Ownable, IConfig {
     mapping(address => uint) public protocolFeeRateMap;
     mapping(address => uint) public subsidyFeeRateMap;
     mapping(address => uint) public priceStepMap;
-    bytes public override orderNFTByteCode;
-    bytes public override orderBookByteCode;
+    bytes internal orderNFTByteCode;
+    bytes internal orderBookByteCode;
+
+    address public override WETH;
+    address internal pairFactory;
+    address internal orderBookFactory;
+    constructor(address _WETH) {
+        WETH = _WETH;
+    }
+
+    function getPairFactory() external view override returns (address) {
+        require(pairFactory != address(0), 'Pair Factory Address not set');
+        return pairFactory;
+    }
+
+    function setPairFactory(address newPairFactory) external override {
+        require(pairFactory == address(0), 'Pair Factory Address set already');
+        pairFactory = newPairFactory;
+    }
+
+    function getOrderBookFactory() external view override returns (address) {
+        require(orderBookFactory != address(0), 'Order Book Factory Address not set');
+        return orderBookFactory;
+    }
+    function setOrderBookFactory(address newOrderBookFactory) external override {
+        require(orderBookFactory == address(0), 'Order Book Factory Address set already');
+        orderBookFactory = newOrderBookFactory;
+    }
+
+    function getOrderNFTByteCode() external view override returns (bytes memory bytecode) {
+        require(orderNFTByteCode.length != 0, 'Order NFT Bytecode not set');
+        bytecode = orderNFTByteCode;
+    }
 
     function setOrderNFTByteCode(bytes memory byteCode) external override onlyOwner {
+        require(orderNFTByteCode.length == 0, 'Order NFT Bytecode set already');
         orderNFTByteCode = byteCode;
     }
 
+    function getOrderBookByteCode() external view override returns (bytes memory bytecode) {
+        require(orderBookByteCode.length != 0, 'Order Book Bytecode not set');
+        bytecode = orderBookByteCode;
+    }
+
     function setOrderBookByteCode(bytes memory byteCode) external override onlyOwner {
+        require(orderBookByteCode.length == 0, 'Order Book Bytecode set already');
         orderBookByteCode = byteCode;
     }
 

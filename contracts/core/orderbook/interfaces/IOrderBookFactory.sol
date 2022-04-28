@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IOrderBookFactory {
-    function WETH() external view returns (address);
-    function pairFactory() external view returns (address);
     function config() external view returns (address);
     function getOrderNFT(address tokenA, address tokenB) external view returns (address orderNFT);
     function allOrderNFTs(uint) external view returns (address orderNFT);

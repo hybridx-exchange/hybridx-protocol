@@ -13,15 +13,13 @@ contract OrderBookFactory is IOrderBookFactory {
     mapping(address => mapping(address => address)) public override getOrderBook;
     address[] public override allOrderNFTs;
     address[] public override allOrderBooks;
-    address public override pairFactory;
-    address public override WETH;
     address public override config;
 
     event OrderBookCreated(address, address, address, address);
     event OrderNFTCreated(address, address, address, address);
 
-    constructor(address _pairFactory, address _WETH, address _config) {
-        (pairFactory, WETH, config) = (_pairFactory, _WETH, _config);
+    constructor(address _config) {
+        config = _config;
     }
 
     function allOrderBookLength() external override view returns (uint) {
@@ -58,7 +56,7 @@ contract OrderBookFactory is IOrderBookFactory {
         require(getOrderNFT[token0][token1] == address(0), 'OF: ORDER_NFT_EXISTS');
         address orderBook = orderBookFor(baseToken, quoteToken);
 
-        bytes memory bytecode = IConfig(config).orderNFTByteCode();
+        bytes memory bytecode = IConfig(config).getOrderNFTByteCode();
         require(bytecode.length != 0, 'OF: NO_ORDER_NFT_BYTE_CODE');
 
         bytes32 salt = keccak256(abi.encodePacked(orderBook, token0, token1));
@@ -81,9 +79,9 @@ contract OrderBookFactory is IOrderBookFactory {
         require(getOrderBook[token0][token1] == address(0), 'OF: ORDER_BOOK_EXISTS');
         require(getOrderNFT[token0][token1] != address(0), 'OF: ORDER_NFT_NOT_EXISTS');
 
-        address pair = IPairFactory(pairFactory).getPair(token0, token1);
+        address pair = IPairFactory(IConfig(config).getPairFactory()).getPair(token0, token1);
         require(pair != address(0), 'OF: TOKEN_PAIR_NOT_EXISTS');
-        bytes memory bytecode = IConfig(config).orderBookByteCode();
+        bytes memory bytecode = IConfig(config).getOrderBookByteCode();
         require(bytecode.length != 0, 'OF: NO_ORDER_BOOK_BYTE_CODE');
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         address orderBook;
@@ -98,10 +96,10 @@ contract OrderBookFactory is IOrderBookFactory {
     }
 
     function getOrderNFTCodeHash() external view override returns (bytes32) {
-        return keccak256(IConfig(config).orderNFTByteCode());
+        return keccak256(IConfig(config).getOrderNFTByteCode());
     }
 
     function getOrderBookCodeHash() external view override returns (bytes32) {
-        return keccak256(IConfig(config).orderBookByteCode());
+        return keccak256(IConfig(config).getOrderBookByteCode());
     }
 }
