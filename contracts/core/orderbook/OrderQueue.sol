@@ -50,7 +50,7 @@ contract OrderQueue {
     // del
     function del(uint direction, uint price, uint data) internal {
         (uint front, uint rear) = (limitOrderQueueFront[direction][price], limitOrderQueueRear[direction][price]);
-        require(front < rear, 'Invalid queue');
+        require(front < rear, 'Queue: Invalid queue');
 
         uint pre = limitOrderQueueMap[direction][price][front];
         uint cur = pre;

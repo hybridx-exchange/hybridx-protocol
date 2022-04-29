@@ -36,9 +36,9 @@ contract OrderBookFactory is IOrderBookFactory {
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'OrderBookFactory: IDENTICAL_ADDRESSES');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
+        require(token0 != address(0), 'OrderBookFactory: ZERO_ADDRESS');
     }
 
     // calculates the CREATE2 address for a without making any external calls
@@ -54,14 +54,14 @@ contract OrderBookFactory is IOrderBookFactory {
 
     //create order NFT
     function createOrderNFT(address baseToken, address quoteToken) external override {
-        require(baseToken != quoteToken, 'OF: IDENTICAL_ADDRESSES');
+        require(baseToken != quoteToken, 'OrderBookFactory: IDENTICAL_ADDRESSES');
         (address token0, address token1) = sortTokens(baseToken, quoteToken);
-        require(token0 != address(0), 'OF: ZERO_ADDRESS');
+        require(token0 != address(0), 'OrderBookFactory: ZERO_ADDRESS');
         require(getOrderNFT[token0][token1] == address(0), 'OF: ORDER_NFT_EXISTS');
         address orderBook = orderBookFor(baseToken, quoteToken);
 
         bytes memory bytecode = IConfig(config).getOrderNFTByteCode();
-        require(bytecode.length != 0, 'OF: NO_ORDER_NFT_BYTE_CODE');
+        require(bytecode.length != 0, 'OrderBookFactory: NO_ORDER_NFT_BYTE_CODE');
 
         bytes32 salt = keccak256(abi.encodePacked(orderBook, token0, token1));
         address orderNFT;
@@ -77,16 +77,16 @@ contract OrderBookFactory is IOrderBookFactory {
 
     //create order book
     function createOrderBook(address baseToken, address quoteToken) external override {
-        require(baseToken != quoteToken, 'OF: IDENTICAL_ADDRESSES');
+        require(baseToken != quoteToken, 'OrderBookFactory: IDENTICAL_ADDRESSES');
         (address token0, address token1) = sortTokens(baseToken, quoteToken);
-        require(token0 != address(0), 'OF: ZERO_ADDRESS');
-        require(getOrderBook[token0][token1] == address(0), 'OF: ORDER_BOOK_EXISTS');
-        require(getOrderNFT[token0][token1] != address(0), 'OF: ORDER_NFT_NOT_EXISTS');
+        require(token0 != address(0), 'OrderBookFactory: ZERO_ADDRESS');
+        require(getOrderBook[token0][token1] == address(0), 'OrderBookFactory: ORDER_BOOK_EXISTS');
+        require(getOrderNFT[token0][token1] != address(0), 'OrderBookFactory: ORDER_NFT_NOT_EXISTS');
 
         address pair = IPairFactory(IConfig(config).getPairFactory()).getPair(token0, token1);
-        require(pair != address(0), 'OF: TOKEN_PAIR_NOT_EXISTS');
+        require(pair != address(0), 'OrderBookFactory: TOKEN_PAIR_NOT_EXISTS');
         bytes memory bytecode = IConfig(config).getOrderBookByteCode();
-        require(bytecode.length != 0, 'OF: NO_ORDER_BOOK_BYTE_CODE');
+        require(bytecode.length != 0, 'OrderBookFactory: NO_ORDER_BOOK_BYTE_CODE');
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         address orderBook;
         assembly {

@@ -51,7 +51,7 @@ contract PriceList {
 
     function delPrice(uint direction, uint price) internal {
         (uint preIndex, uint nextIndex) = priceLocation(direction, price);
-        require(price == nextIndex, 'Invalid price');
+        require(price == nextIndex, 'List: Invalid price');
         limitOrderPriceListMap[direction][preIndex] = limitOrderPriceListMap[direction][nextIndex];
         delete limitOrderPriceListMap[direction][nextIndex];
         limitOrderPriceArrayLength[direction]--;

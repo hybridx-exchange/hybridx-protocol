@@ -57,12 +57,12 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     // called once by the orderBookFactory at time of deployment
     function initialize(address _pair, address _baseToken, address _quoteToken, address _orderNFT, address _config)
     override external {
-        require(msg.sender == orderBookFactory, 'FORBIDDEN'); // sufficient check
+        require(msg.sender == orderBookFactory, 'OrderBook: FORBIDDEN'); // sufficient check
         (address token0, address token1) = (IPair(_pair).token0(), IPair(_pair).token1());
         require(
             (token0 == _baseToken && token1 == _quoteToken) ||
             (token1 == _baseToken && token0 == _quoteToken),
-            'Token Pair Invalid');
+            'OrderBook: Token Pair Invalid');
 
         pair = _pair;
         orderNFT = _orderNFT;
@@ -73,7 +73,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     function reverse() external override {
         require(priceLength(LIMIT_BUY) == 0 && priceLength(LIMIT_SELL) == 0,
-            'Order Exist');
+            'OrderBook: Order Exist');
         (baseToken, quoteToken) = (quoteToken, baseToken);
     }
 
@@ -97,7 +97,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     function _safeTransfer(address token, address to, uint value) internal {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR_TRANSFER, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED');
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'OrderBook: TRANSFER_FAILED');
     }
 
     function _batchTransfer(address token, address[] memory accounts, uint[] memory amounts) internal {
@@ -119,7 +119,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     uint private unlocked = 1;
     modifier lock() {
-        require(unlocked == 1, 'LOCKED');
+        require(unlocked == 1, 'OrderBook: LOCKED');
         unlocked = 0;
         _;
         unlocked = 1;
@@ -333,7 +333,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         if (index > 0) {
             accountsTo = Arrays.subAddress(accountsAll, index);
             amountsTo = new uint[](index);
-            require(amountsTo.length <= amountsOut.length, "Index Invalid");
+            require(amountsTo.length <= amountsOut.length, "OrderBook: Index Invalid");
             for (uint i; i<index; i++) {
                 amountsTo[i] = amountInOffer.mul(amountsOut[i]).div(amountOutWithFee);
             }
@@ -454,7 +454,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             }
 
             _ammSwapPrice(to, quoteToken, baseToken, amountAmmQuote, amountAmmBase);
-            require(amountLeft == 0 || getPrice() >= targetPrice, "buy to target price failed");
+            require(amountLeft == 0 || getPrice() >= targetPrice, "OrderBook: buy to target price failed");
         }
     }
 
@@ -526,14 +526,14 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             }
 
             _ammSwapPrice(to, baseToken, quoteToken, amountAmmBase, amountAmmQuote);
-            require(amountLeft == 0 || getPrice() <= targetPrice, "sell to target price failed");
+            require(amountLeft == 0 || getPrice() <= targetPrice, "OrderBook: sell to target price failed");
         }
     }
 
     //limit order for buy base token with quote token
     function createBuyLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
-        require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'Pair Not Connected');
+        require(price > 0 && (price % priceStep(price)) == 0, 'OrderBook: Price Invalid');
+        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'OrderBook: Pair Not Connected');
 
         //get input amount of quote token for buy limit order
         uint balance = _getQuoteBalance();
@@ -550,8 +550,8 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
     //limit order for sell base token to quote token
     function createSellLimitOrder(address user, uint price, address to) external override lock returns (uint orderId) {
-        require(price > 0 && (price % priceStep(price)) == 0, 'Price Invalid');
-        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'Pair Not Connected');
+        require(price > 0 && (price % priceStep(price)) == 0, 'OrderBook: Price Invalid');
+        require(IConfig(config).getOrderBookFactory() == orderBookFactory, 'OrderBook: Pair Not Connected');
 
         //get input amount of base token for sell limit order
         uint balance = _getBaseBalance();
@@ -662,7 +662,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
     function takeOrderWhenMovePrice(address tokenIn, uint amountIn, address to) external override lock
     returns (uint amountOutLeft, address[] memory accounts, uint[] memory amounts) {
         //take order before pay, make sure only pair can call this function
-        require(msg.sender == pair, 'invalid sender');
+        require(msg.sender == pair, 'OrderBook: invalid sender');
         uint[] memory reserves = new uint[](2);//[reserveBase, reserveQuote]
         (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
 
