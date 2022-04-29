@@ -46,7 +46,6 @@ contract Config is Ownable, IConfig {
     }
 
     function getOrderNFTByteCode() external view override returns (bytes memory bytecode) {
-        require(orderNFTByteCode.length != 0, 'Order NFT Bytecode not set');
         bytecode = orderNFTByteCode;
     }
 
@@ -56,7 +55,6 @@ contract Config is Ownable, IConfig {
     }
 
     function getOrderBookByteCode() external view override returns (bytes memory bytecode) {
-        require(orderBookByteCode.length != 0, 'Order Book Bytecode not set');
         bytecode = orderBookByteCode;
     }
 
