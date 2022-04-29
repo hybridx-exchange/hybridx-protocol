@@ -8,7 +8,7 @@ import '../../orderbook/interfaces/IOrderBookFactory.sol';
 import "../interfaces/IPair.sol";
 import "../interfaces/IPairFactory.sol";
 
-library UniswapV2Library {
+library PairLibrary {
     using SafeMath for uint;
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
@@ -70,7 +70,8 @@ library UniswapV2Library {
     }
 
     // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOut(address factory, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {
+    function getAmountsOut(address factory, uint amountIn, address[] memory path) external view
+    returns (uint[] memory amounts) {
         require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
@@ -120,7 +121,7 @@ library UniswapV2Library {
     }
 
     function getBestAmountsOut(address factory, uint amountIn, address[][] memory paths)
-    internal
+    external
     view
     returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
         require(paths.length >= 1, 'UniswapV2Library: INVALID_PATHS');
@@ -141,7 +142,7 @@ library UniswapV2Library {
 
     // performs chained getAmountIn calculations on any number of pairs
     function getAmountsIn(address factory, uint amountOut, address[] memory path)
-    internal
+    external
     view
     returns (uint[] memory amounts) {
         require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
@@ -193,7 +194,7 @@ library UniswapV2Library {
     }
 
     function getBestAmountsIn(address factory, uint amountOut, address[][] memory paths)
-    internal
+    external
     view
     returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
         require(paths.length >= 1, 'UniswapV2Library: INVALID_PATHS');
