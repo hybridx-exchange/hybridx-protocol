@@ -16,12 +16,13 @@ contract Config is Ownable, IConfig {
     mapping(address => uint) public protocolFeeRateMap;
     mapping(address => uint) public subsidyFeeRateMap;
     mapping(address => uint) public priceStepMap;
-    bytes internal orderNFTByteCode;
-    bytes internal orderBookByteCode;
 
     address public override WETH;
-    address internal pairFactory;
-    address internal orderBookFactory;
+
+    bytes private orderNFTByteCode;
+    bytes private orderBookByteCode;
+    address private pairFactory;
+    address private orderBookFactory;
     constructor(address _WETH) {
         WETH = _WETH;
     }

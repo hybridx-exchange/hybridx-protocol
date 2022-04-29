@@ -61,8 +61,7 @@ contract PriceList {
         next = limitOrderPriceListMap[direction][cur];
     }
 
-    function nextPriceWhenRemoveFirst(uint direction, uint cur) internal view returns (uint next) {
-        next = limitOrderPriceListMap[direction][cur];
-        next = next == 0 ? limitOrderPriceListMap[direction][0] : next;
+    function firstPrice(uint direction) internal view returns (uint first) {
+        first = limitOrderPriceListMap[direction][0];
     }
 }
