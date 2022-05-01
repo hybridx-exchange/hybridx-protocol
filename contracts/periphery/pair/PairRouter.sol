@@ -271,8 +271,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        address WETH = IConfig(config).WETH();
-        address factory = IConfig(config).getPairFactory();
+        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
         require(path[0] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -288,8 +287,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        address WETH = IConfig(config).WETH();
-        address factory = IConfig(config).getPairFactory();
+        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
         require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
@@ -308,8 +306,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        address WETH = IConfig(config).WETH();
-        address factory = IConfig(config).getPairFactory();
+        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
         require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -329,8 +326,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        address WETH = IConfig(config).WETH();
-        address factory = IConfig(config).getPairFactory();
+        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
         require(path[0] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= msg.value, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
