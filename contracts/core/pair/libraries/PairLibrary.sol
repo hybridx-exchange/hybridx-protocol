@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../../../deps/libraries/SafeMath.sol";
-import '../../config/interfaces/IConfig.sol';
+import '../../../config/interfaces/IConfig.sol';
 import '../../orderbook/interfaces/IOrderBook.sol';
 import '../../orderbook/interfaces/IOrderBookFactory.sol';
 import "../interfaces/IPair.sol";

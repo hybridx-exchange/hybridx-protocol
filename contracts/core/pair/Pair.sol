@@ -8,7 +8,6 @@ import "../../deps/libraries/SafeMath.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import './libraries/PairLibrary.sol';
-import '../config/interfaces/IConfig.sol';
 import '../orderbook/interfaces/IOrderBook.sol';
 import '../orderbook/interfaces/IOrderBookFactory.sol';
 import './interfaces/IPairCallee.sol';
