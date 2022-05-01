@@ -12,7 +12,7 @@ import "./interfaces/IOrderBookRouter.sol";
 @ens                            cherideal.eth
 **************************************************************************************************************/
 contract OrderBookRouter is IOrderBookRouter {
-    address public immutable config;
+    address public override config;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'HybridRouter: EXPIRED');

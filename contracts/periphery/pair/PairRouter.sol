@@ -12,7 +12,7 @@ import '../../deps/libraries/TransferHelper.sol';
 contract PairRouter is IPairRouter {
     using SafeMath for uint;
 
-    address public immutable override config;
+    address public override config;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'PairRouter: EXPIRED');
@@ -57,6 +57,7 @@ contract PairRouter is IPairRouter {
             }
         }
     }
+
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -73,6 +74,7 @@ contract PairRouter is IPairRouter {
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
         liquidity = IPair(pair).mint(to);
     }
+
     function addLiquidityETH(
         address token,
         uint amountTokenDesired,
@@ -117,6 +119,7 @@ contract PairRouter is IPairRouter {
         require(amountA >= amountAMin, 'PairRouter: INSUFFICIENT_A_AMOUNT');
         require(amountB >= amountBMin, 'PairRouter: INSUFFICIENT_B_AMOUNT');
     }
+
     function removeLiquidityETH(
         address token,
         uint liquidity,
@@ -139,6 +142,7 @@ contract PairRouter is IPairRouter {
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH);
     }
+
     function removeLiquidityWithPermit(
         address tokenA,
         address tokenB,
@@ -154,6 +158,7 @@ contract PairRouter is IPairRouter {
         IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
     }
+
     function removeLiquidityETHWithPermit(
         address token,
         uint liquidity,
@@ -192,6 +197,7 @@ contract PairRouter is IPairRouter {
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH);
     }
+
     function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
@@ -224,6 +230,7 @@ contract PairRouter is IPairRouter {
             );
         }
     }
+
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -239,6 +246,7 @@ contract PairRouter is IPairRouter {
         );
         _swap(amounts, path, to);
     }
+
     function swapTokensForExactTokens(
         uint amountOut,
         uint amountInMax,
@@ -254,6 +262,7 @@ contract PairRouter is IPairRouter {
         );
         _swap(amounts, path, to);
     }
+
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         virtual
@@ -271,6 +280,7 @@ contract PairRouter is IPairRouter {
         assert(IWETH(WETH).transfer(PairLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
+
     function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
         external
         virtual
@@ -290,6 +300,7 @@ contract PairRouter is IPairRouter {
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
+
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         external
         virtual
@@ -309,6 +320,7 @@ contract PairRouter is IPairRouter {
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
         TransferHelper.safeTransferETH(to, amounts[amounts.length - 1]);
     }
+
     function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
         external
         virtual
@@ -340,16 +352,17 @@ contract PairRouter is IPairRouter {
             uint amountInput;
             uint amountOutput;
             { // scope to avoid stack too deep errors
-            (uint reserve0, uint reserve1,) = pair.getReserves();
-            (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-            amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-            amountOutput = PairLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+                (uint reserve0, uint reserve1,) = pair.getReserves();
+                (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+                amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
+                amountOutput = PairLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
             address to = i < path.length - 2 ? PairLibrary.pairFor(factory, output, path[i + 2]) : _to;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
+
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint amountIn,
         uint amountOutMin,
@@ -367,6 +380,7 @@ contract PairRouter is IPairRouter {
             'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
+
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
         uint amountOutMin,
         address[] calldata path,
@@ -391,6 +405,7 @@ contract PairRouter is IPairRouter {
             'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
+
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
         uint amountIn,
         uint amountOutMin,
@@ -461,7 +476,7 @@ contract PairRouter is IPairRouter {
     }
 
     function getBestAmountsOut(uint amountIn, address[] memory paths, uint[] memory lens)
-        public
+        external
         view
         virtual
         override
@@ -480,7 +495,7 @@ contract PairRouter is IPairRouter {
     }
 
     function getBestAmountsIn(uint amountOut, address[] memory paths, uint[] memory lens)
-        public
+        external
         view
         virtual
         override

@@ -7,8 +7,10 @@ import { expandTo18Decimals } from './utilities'
 import ERC20 from '../../build/ERC20.json'
 import Config from '../../build/Config.json'
 import PairFactory from '../../build/PairFactory.json'
+import PairRouter from '../../build/PairRouter.json'
 import Pair from '../../build/Pair.json'
 import OrderBookFactory from '../../build/OrderBookFactory.json'
+import OrderBookRouter from '../../build/OrderBookRouter.json'
 import OrderBook from '../../build/OrderBook.json'
 import OrderNFT from '../../build/OrderNFT.json'
 import WETH from '../../build/WETH9.json'
@@ -36,6 +38,8 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   await config.setOrderBookFactory(orderBookFactory.address, overrides)
   await config.setOrderBookByteCode(utils.arrayify('0x' + OrderBook.evm.bytecode.object), overrides)
   await config.setOrderNFTByteCode(utils.arrayify('0x' + OrderNFT.evm.bytecode.object), overrides)
+  const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
+  const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
   return { tokenA, tokenB, config, pairFactory, orderBookFactory }
 }
 

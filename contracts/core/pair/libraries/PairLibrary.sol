@@ -91,9 +91,7 @@ library PairLibrary {
 
 
     // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOutWithNextReserves(address factory, uint amountIn, address[] memory path)
-    internal
-    view
+    function getAmountsOutWithNextReserves(address factory, uint amountIn, address[] memory path) internal view
     returns (uint[] memory amounts, uint[] memory nextReserves) {
         require(path.length >= 2, 'PairLibrary: INVALID_PATH');
         amounts = new uint[](path.length);
@@ -120,9 +118,7 @@ library PairLibrary {
         }
     }
 
-    function getBestAmountsOut(address factory, uint amountIn, address[][] memory paths)
-    external
-    view
+    function getBestAmountsOut(address factory, uint amountIn, address[][] memory paths) external view
     returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
         require(paths.length >= 1, 'PairLibrary: INVALID_PATHS');
         uint index = paths.length;
@@ -141,9 +137,7 @@ library PairLibrary {
     }
 
     // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsIn(address factory, uint amountOut, address[] memory path)
-    external
-    view
+    function getAmountsIn(address factory, uint amountOut, address[] memory path) external view
     returns (uint[] memory amounts) {
         require(path.length >= 2, 'PairLibrary: INVALID_PATH');
         amounts = new uint[](path.length);
@@ -163,9 +157,7 @@ library PairLibrary {
     }
 
     // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsInWithNextReserves(address factory, uint amountOut, address[] memory path)
-    internal
-    view
+    function getAmountsInWithNextReserves(address factory, uint amountOut, address[] memory path) internal view
     returns (uint[] memory amounts, uint[] memory nextReserves) {
         require(path.length >= 2, 'PairLibrary: INVALID_PATH');
         amounts = new uint[](path.length);
@@ -193,9 +185,7 @@ library PairLibrary {
         }
     }
 
-    function getBestAmountsIn(address factory, uint amountOut, address[][] memory paths)
-    external
-    view
+    function getBestAmountsIn(address factory, uint amountOut, address[][] memory paths) external view
     returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
         require(paths.length >= 1, 'PairLibrary: INVALID_PATHS');
         uint index;
