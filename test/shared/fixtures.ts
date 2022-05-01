@@ -20,6 +20,7 @@ interface FactoryFixture {
   tokenB: Contract
   config: Contract
   pairFactory: Contract
+  pairRouter: Contract
   orderBookFactory: Contract
 }
 
@@ -34,13 +35,14 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const config = await deployContract(wallet, Config, [weth.address], overrides)
   const pairFactory = await deployContract(wallet, PairFactory, [config.address], overrides)
   await config.setPairFactory(pairFactory.address, overrides);
+  console.log("config pair factory:", await config.getPairFactory())
   const orderBookFactory = await deployContract(wallet, OrderBookFactory, [config.address], overrides)
   await config.setOrderBookFactory(orderBookFactory.address, overrides)
   await config.setOrderBookByteCode(utils.arrayify('0x' + OrderBook.evm.bytecode.object), overrides)
   await config.setOrderNFTByteCode(utils.arrayify('0x' + OrderNFT.evm.bytecode.object), overrides)
   const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
   const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
-  return { tokenA, tokenB, config, pairFactory, orderBookFactory }
+  return { tokenA, tokenB, config, pairFactory, pairRouter, orderBookFactory }
 }
 
 interface PairFixture extends FactoryFixture {
@@ -56,9 +58,16 @@ interface OrderBookFixture extends PairFixture {
 }
 
 export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<OrderBookFixture> {
-  const { tokenA, tokenB, config, pairFactory, orderBookFactory } = await factoryFixture(provider, [wallet])
+  const { tokenA, tokenB, config, pairFactory, pairRouter, orderBookFactory } = await factoryFixture(provider, [wallet])
 
-  await pairFactory.createPair(tokenA.address, tokenB.address, overrides)
+  const tokenAAmount = expandTo18Decimals(5)
+  const tokenBAmount = expandTo18Decimals(10)
+  const zero = expandTo18Decimals(0)
+  await tokenA.approve(pairRouter.address, tokenAAmount)
+  await tokenB.approve(pairRouter.address, tokenBAmount)
+  let deadline = Math.floor(Date.now() / 1000) + 200;
+  await pairRouter.addLiquidity(tokenA.address, tokenB.address, tokenAAmount, tokenBAmount, zero, zero, wallet.address, deadline, overrides)
+
   const pairAddress = await pairFactory.getPair(tokenA.address, tokenB.address)
   const pair = new Contract(pairAddress, JSON.stringify(Pair.abi), provider).connect(wallet)
 
@@ -66,7 +75,6 @@ export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
 
-  //await orderBookFactory.createOrderNFT(tokenA.address, tokenB.address, overrides)
   await orderBookFactory.createOrderBook(tokenA.address, tokenB.address, overrides)
 
   const orderBookAddress = await orderBookFactory.getOrderBook(tokenA.address, tokenB.address)
@@ -74,11 +82,5 @@ export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[
   const baseToken = new Contract(await orderBook.baseToken(), JSON.stringify(ERC20.abi), provider).connect(wallet)
   const quoteToken = new Contract(await orderBook.quoteToken(), JSON.stringify(ERC20.abi), provider).connect(wallet)
 
-  const token0Amount = expandTo18Decimals(5)
-  const token1Amount = expandTo18Decimals(10)
-  await token0.transfer(pair.address, token0Amount)
-  await token1.transfer(pair.address, token1Amount)
-  await pair.mint(wallet.address, overrides)
-
-  return { config, pairFactory, orderBookFactory, token0, token1, pair, baseToken, quoteToken, orderBook, tokenA, tokenB }
+  return { config, pairFactory, pairRouter, orderBookFactory, token0, token1, pair, baseToken, quoteToken, orderBook, tokenA, tokenB }
 }

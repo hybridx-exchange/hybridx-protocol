@@ -18,22 +18,19 @@ library PairLibrary {
         require(token0 != address(0), 'PairLibrary: ZERO_ADDRESS');
     }
 
-    // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address factory, address tokenA, address tokenB) internal pure returns (address pair) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
-        pair = address(uint160(bytes20(keccak256(abi.encodePacked(
-            hex'ff',
-            factory,
-            keccak256(abi.encodePacked(token0, token1)),
-            IPairFactory(factory).getCodeHash() // init code hash
-        )))));
+    function getPair(address factory, address tokenA, address tokenB) internal view returns (address pair) {
+        pair = IPairFactory(factory).getPair(tokenA, tokenB);
     }
 
     // fetches and sorts the reserves for a pair
-    function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
+    function getReserves(address factory, address tokenA, address tokenB) internal view
+    returns (uint reserveA, uint reserveB, address pair) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IPair(pairFor(factory, tokenA, tokenB)).getReserves();
-        (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+        pair = IPairFactory(factory).getPair(tokenA, tokenB);
+        if (pair != address(0)) {
+            (uint reserve0, uint reserve1,) = IPair(pair).getReserves();
+            (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
+        }
     }
 
     // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
@@ -83,7 +80,7 @@ library PairLibrary {
                 (amounts[i + 1],,) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
             }
             else {
-                (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
                 amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
             }
         }
@@ -111,7 +108,7 @@ library PairLibrary {
                     (nextReserveBase, nextReserveQuote) : (nextReserveQuote, nextReserveBase);
             }
             else {
-                (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
                 amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
                 (nextReserves[2 * i], nextReserves[2 * i + 1]) = (reserveIn + amounts[i], reserveOut - amounts[i + 1]);
             }
@@ -150,7 +147,7 @@ library PairLibrary {
                 (amounts[i - 1],,) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
             }
             else {
-                (uint reserveIn, uint reserveOut) = getReserves(factory, path[i - 1], path[i]);
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
                 amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
             }
         }
@@ -177,7 +174,7 @@ library PairLibrary {
                     (nextReserveBase, nextReserveQuote) : (nextReserveQuote, nextReserveBase);
             }
             else {
-                (uint reserveIn, uint reserveOut) = getReserves(factory, path[i - 1], path[i]);
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
                 amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
                 (nextReserves[2 * (i - 1)], nextReserves[2 * (i - 1) + 1]) =
                     (reserveIn + amounts[i - 1], reserveOut - amounts[i]);
