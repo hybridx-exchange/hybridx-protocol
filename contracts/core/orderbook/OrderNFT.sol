@@ -52,9 +52,9 @@ contract OrderNFT is
 
     function symbol() public view virtual override returns (string memory) {
         return super.symbol()
-        .concat("@")
+        .concat("#")
         .concat(IOrderBook(orderbook).baseToken().toHexString())
-        .concat("/")
+        .concat("-")
         .concat(IOrderBook(orderbook).quoteToken().toHexString());
     }
 
