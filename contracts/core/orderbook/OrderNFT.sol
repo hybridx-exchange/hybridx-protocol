@@ -8,7 +8,9 @@ import "../../deps/extensions/ERC721Burnable.sol";
 import "../../deps/access/AccessControlEnumerable.sol";
 import "../../deps/utils/Context.sol";
 import "../../deps/utils/Counters.sol";
+import "../../deps/utils/Strings.sol";
 import "../../deps/libraries/SafeMath.sol";
+import "./interfaces/IOrderBook.sol";
 import "./interfaces/IOrder.sol";
 
 contract OrderNFT is
@@ -23,6 +25,8 @@ contract OrderNFT is
 
     using Counters for Counters.Counter;
     using SafeMath for uint256;
+    using Strings for string;
+    using Strings for address;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -44,6 +48,14 @@ contract OrderNFT is
 
     function _baseURI() internal view virtual override returns (string memory) {
         return _baseTokenURI;
+    }
+
+    function symbol() public view virtual override returns (string memory) {
+        return super.symbol()
+        .concat("@")
+        .concat(IOrderBook(orderbook).baseToken().toHexString())
+        .concat("/")
+        .concat(IOrderBook(orderbook).quoteToken().toHexString());
     }
 
     function add(uint256 tokenId, uint256 amount) external virtual override {
