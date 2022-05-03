@@ -165,8 +165,8 @@ library PairLibrary {
                 uint nextReserveBase;
                 uint nextReserveQuote;
                 (amounts[i - 1], nextReserveBase, nextReserveQuote) =
-                IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
-                (nextReserves[2 * (i - 1)], nextReserves[2 * (i - 1) + 1]) = baseToken == path[i] ?
+                    IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
+                (nextReserves[2 * (i - 1)], nextReserves[2 * (i - 1) + 1]) = baseToken == path[i - 1] ?
                     (nextReserveBase, nextReserveQuote) : (nextReserveQuote, nextReserveBase);
             }
             else {
