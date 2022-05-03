@@ -63,7 +63,7 @@ export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[
   const { tokenA, tokenB, config, pairFactory, pairRouter, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
 
   const tokenAAmount = expandTo18Decimals(1)
-  const tokenBAmount = expandTo18Decimals(2)
+  const tokenBAmount = expandTo6Decimals(2)
   const zero = expandTo18Decimals(0)
   await tokenA.approve(pairRouter.address, tokenAAmount)
   await tokenB.approve(pairRouter.address, tokenBAmount)
