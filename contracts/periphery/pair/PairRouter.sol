@@ -460,9 +460,9 @@ contract PairRouter is IPairRouter {
         view
         virtual
         override
-        returns (uint[] memory amounts)
+        returns (uint[] memory amounts, uint[] memory nextReserves)
     {
-        return PairLibrary.getAmountsOut(IConfig(config).getPairFactory(), amountIn, path);
+        return PairLibrary.getAmountsOutWithNextReserves(IConfig(config).getPairFactory(), amountIn, path);
     }
 
     function getAmountsIn(uint amountOut, address[] memory path)
@@ -470,9 +470,9 @@ contract PairRouter is IPairRouter {
         view
         virtual
         override
-        returns (uint[] memory amounts)
+        returns (uint[] memory amounts, uint[] memory nextReserves)
     {
-        return PairLibrary.getAmountsIn(IConfig(config).getPairFactory(), amountOut, path);
+        return PairLibrary.getAmountsInWithNextReserves(IConfig(config).getPairFactory(), amountOut, path);
     }
 
     function getBestAmountsOut(uint amountIn, address[] memory paths, uint[] memory lens)
