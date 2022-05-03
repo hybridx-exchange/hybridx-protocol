@@ -171,7 +171,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         //delete price
         if (length(order._type, order._price) == 0) {
-            delPrice(order._type, order._price);
+            delFirstPrice(order._type);
         }
     }
 
@@ -299,17 +299,15 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
             IOrderNFT.OrderDetail memory order = IOrderNFT(orderNFT).get(orderId);
             accountsAll[index] = IERC721(orderNFT).ownerOf(orderId);
             uint amountTake = amountLeft > order._remain ? order._remain : amountLeft;
-            amountsOut[index] = amountTake;
+            amountsOut[index++] = amountTake;
 
             amountLeft = amountLeft - amountTake;
             if (amountTake != order._remain) {
                 IOrderNFT(orderNFT).sub(orderId, amountTake);
-                index++;
                 break;
             }
 
             _removeFrontLimitOrderOfQueue(orderId, order);
-            index++;
         }
 
         if (index > 0) {

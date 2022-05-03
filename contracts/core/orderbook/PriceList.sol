@@ -64,4 +64,11 @@ contract PriceList {
     function firstPrice(uint direction) internal view returns (uint first) {
         first = limitOrderPriceListMap[direction][0];
     }
+
+    function delFirstPrice(uint direction) internal {
+        uint next = limitOrderPriceListMap[direction][0];
+        limitOrderPriceListMap[direction][0] = limitOrderPriceListMap[direction][next];
+        delete limitOrderPriceListMap[direction][next];
+        limitOrderPriceArrayLength[direction]--;
+    }
 }

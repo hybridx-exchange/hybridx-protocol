@@ -1,13 +1,14 @@
 import { Contract } from 'ethers'
 import { Web3Provider } from 'ethers/providers'
 import {
-  BigNumber,
-  bigNumberify,
-  getAddress,
-  keccak256,
-  defaultAbiCoder,
-  toUtf8Bytes,
-  solidityPack
+    BigNumber,
+    bigNumberify,
+    getAddress,
+    keccak256,
+    defaultAbiCoder,
+    toUtf8Bytes,
+    solidityPack,
+    formatUnits
 } from 'ethers/utils'
 
 const PERMIT_TYPEHASH = keccak256(
@@ -16,6 +17,10 @@ const PERMIT_TYPEHASH = keccak256(
 
 export function expandTo18Decimals(n: number): BigNumber {
   return bigNumberify(n).mul(bigNumberify(10).pow(18))
+}
+
+export function expandTo6Decimals(n: number): BigNumber {
+    return bigNumberify(n).mul(bigNumberify(10).pow(6))
 }
 
 function getDomainSeparator(name: string, tokenAddress: string) {
@@ -108,4 +113,21 @@ export function printOrder(o: Order) {
     console.log("order.amountRemain :", o.amountRemain.toString())
     console.log("order.orderType :", o.orderType.toString())
     console.log("order.orderIndex :", o.orderIndex.toString())
+}
+
+// @ts-ignore
+export function printOrderBook(result) {
+    console.log("\n# \tamount    \tprice")
+    for (let i=result.sellPrices.length-1;i>=0;i--){
+        console.log("v \t%s %s \t%s %s",
+            formatUnits(result.sellAmounts[i], 18), "base",
+            formatUnits(result.sellPrices[i], 6), "quote")
+    }
+    console.log("> \t%s\t%s %s", "---------------", formatUnits(result.price, 6), "quote")
+    for (let i=0;i<result.buyPrices.length;i++){
+        //let amount = buyAmounts[i].mul(ethers.utils.parseUnits("1", bDecimal)).div(buyPrices[i])
+        console.log("^ \t%s %s \t%s %s",
+            formatUnits(result.buyAmounts[i], 6), "quote",
+            formatUnits(result.buyPrices[i], 6), "quote")
+    }
 }
