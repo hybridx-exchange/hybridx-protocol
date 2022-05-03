@@ -6,6 +6,7 @@ import "../../deps/interfaces/IWETH.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "../../deps/libraries/Arrays.sol";
+import "../../deps/interfaces/IERC721Receiver.sol";
 import "./interfaces/IOrderNFT.sol";
 import "./interfaces/IOrderBook.sol";
 import "./libraries/OrderBookLibrary.sol";
@@ -16,7 +17,7 @@ import "./PriceList.sol";
 @author                         https://twitter.com/cherideal
 @ens                            cherideal.eth
 **************************************************************************************************************/
-contract OrderBook is IOrderBook, OrderQueue, PriceList {
+contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
     using SafeMath for uint;
     using SafeMath for uint112;
     using UQ112x112 for uint224;
@@ -171,7 +172,7 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
 
         //delete price
         if (length(order._type, order._price) == 0) {
-            delFirstPrice(order._type);
+            delFirstPrice(order._type, order._price);
         }
     }
 
@@ -541,9 +542,9 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         _updateBalance();
     }
 
-    //user send it's order to orderbook，then orderbook burn the order and refund
-    function _cancelLimitOrder(address to, uint orderId) private lock {
+    function cancelLimitOrder(address to, uint orderId) public lock {
         IOrderNFT.OrderDetail memory o = IOrderNFT(orderNFT).get(orderId);
+        require(msg.sender == IOrderNFT(orderNFT).ownerOf(orderId), "OrderBook: Not Owner");
 
         _removeLimitOrder(orderId, o);
 
@@ -555,6 +556,12 @@ contract OrderBook is IOrderBook, OrderQueue, PriceList {
         uint balance = IERC20(token).balanceOf(address(this));
         if (o._type == LIMIT_BUY) quoteBalance = balance;
         else baseBalance = balance;
+    }
+
+    function onERC721Received(address, address to, uint256 tokenId, bytes memory) public virtual override
+    returns (bytes4) {
+        cancelLimitOrder(to, tokenId);
+        return this.onERC721Received.selector;
     }
 
     /*******************************************************************************************************
