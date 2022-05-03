@@ -55,7 +55,7 @@ describe('HybridxOrderBook', () => {
         printOrderBook(result)
 
         deadline = Math.floor(Date.now() / 1000) + 200;
-        await orderBookRouter.sellToken(expandTo18Decimals(3), bigNumberify("2000000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)
+        await orderBookRouter.sellToken(expandTo18Decimals(1), bigNumberify("2000000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)
 
         result = await orderBookRouter.getOrderBook(tokenBase.address, tokenQuote.address, bigNumberify(2))
         printOrderBook(result)
