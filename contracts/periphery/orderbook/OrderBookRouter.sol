@@ -48,7 +48,7 @@ contract OrderBookRouter is IOrderBookRouter {
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, quoteToken);
         if (orderBook == address(0)) {
-            IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
+            orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
         }
 
         require(quoteToken == IOrderBook(orderBook).quoteToken(), "HybridRouter: MisOrder_Path");
@@ -78,8 +78,9 @@ contract OrderBookRouter is IOrderBookRouter {
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, WETH);
         if (orderBook == address(0)) {
-            IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, WETH);
+            orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, WETH);
         }
+
         require(IOrderBook(orderBook).quoteToken() == WETH, 'HybirdRouter: MisOrder_Path');
         IWETH(WETH).deposit{value: msg.value}();
         assert(IWETH(WETH).transfer(orderBook, msg.value));
@@ -106,9 +107,10 @@ contract OrderBookRouter is IOrderBookRouter {
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, quoteToken);
         if (orderBook == address(0)) {
-            IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
+            orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
         }
 
+        require(quoteToken == IOrderBook(orderBook).quoteToken(), "HybridRouter: MisOrder_Path");
         TransferHelper.safeTransferFrom(
             baseToken, msg.sender, orderBook, amountOffer
         );
@@ -135,10 +137,10 @@ contract OrderBookRouter is IOrderBookRouter {
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(WETH, quoteToken);
         if (orderBook == address(0)) {
-            IOrderBookFactory(orderBookFactory).createOrderBook(WETH, quoteToken);
+            orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(WETH, quoteToken);
         }
-        require(WETH == IOrderBook(orderBook).baseToken(), 'HybridRouter: MisOrder_Path');
 
+        require(WETH == IOrderBook(orderBook).baseToken(), 'HybridRouter: MisOrder_Path');
         IWETH(WETH).deposit{value: msg.value}();
         assert(IWETH(WETH).transfer(orderBook, msg.value));
 

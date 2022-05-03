@@ -35,7 +35,7 @@ contract OrderBookFactory is IOrderBookFactory {
     }
 
     //create order book
-    function createOrderBook(address baseToken, address quoteToken) external override {
+    function createOrderBook(address baseToken, address quoteToken) external override returns (address orderBook){
         require(baseToken != quoteToken, 'OrderBookFactory: IDENTICAL_ADDRESSES');
         (address token0, address token1) = baseToken < quoteToken ? (baseToken, quoteToken) : (quoteToken, baseToken);
         require(token0 != address(0), 'OrderBookFactory: ZERO_ADDRESS');
@@ -51,7 +51,6 @@ contract OrderBookFactory is IOrderBookFactory {
         require(pair != address(0), 'OrderBookFactory: TOKEN_PAIR_NOT_EXISTS');
 
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
-        address orderBook;
         assembly {
             orderBook := create2(0, add(orderBookByteCode, 32), mload(orderBookByteCode), salt)
         }
