@@ -103,6 +103,16 @@ contract OrderNFT is
         order = orderDetails[_tokenId];
     }
 
+    function getUserOrders(address user) external view returns (OrderDetail[] memory orders) {
+        uint balance = balanceOf(user);
+        if (balance > 0) {
+            orders = new OrderDetail[](balance);
+            for (uint i = 0; i < balance; i++) {
+                orders[i] = orderDetails[tokenOfOwnerByIndex(user, i)];
+            }
+        }
+    }
+
     function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual
         override(ERC721, ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId);
