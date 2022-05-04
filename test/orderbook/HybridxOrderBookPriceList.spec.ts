@@ -31,6 +31,7 @@ describe('HybridxOrderBook', () => {
     let pairRouter: Contract
     let tokenBase: Contract
     let tokenQuote: Contract
+    let orderNFT: Contract
     beforeEach(async () => {
         const fixture = await loadFixture(orderBookFixture)
         pairFactory = fixture.pairFactory
@@ -43,6 +44,7 @@ describe('HybridxOrderBook', () => {
         pairRouter = fixture.pairRouter
         tokenBase = fixture.tokenA
         tokenQuote = fixture.tokenB
+        orderNFT = fixture.orderNFT
     })
 
     it('priceList test', async () => {
@@ -73,5 +75,8 @@ describe('HybridxOrderBook', () => {
             formatUnits(result.amounts[1], 6),
             formatUnits(result.nextReserves[0], 18),
             formatUnits(result.nextReserves[1], 6))
+
+        result = await orderNFT.getUserOrders(wallet.address);
+        console.log(result)
     })
 })
