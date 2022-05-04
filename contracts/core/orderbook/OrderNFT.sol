@@ -103,12 +103,14 @@ contract OrderNFT is
         order = orderDetails[_tokenId];
     }
 
-    function getUserOrders(address user) external view returns (OrderDetail[] memory orders) {
+    function getUserOrders(address user) external view returns (uint[] memory ids, OrderDetail[] memory orders) {
         uint balance = balanceOf(user);
         if (balance > 0) {
             orders = new OrderDetail[](balance);
+            ids = new uint[](balance);
             for (uint i = 0; i < balance; i++) {
-                orders[i] = orderDetails[tokenOfOwnerByIndex(user, i)];
+                ids[i] = tokenOfOwnerByIndex(user, i);
+                orders[i] = orderDetails[ids[i]];
             }
         }
     }
