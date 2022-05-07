@@ -29,6 +29,7 @@ describe('HybridxOrderBook', () => {
     let orderBookFactory: Contract
     let orderBookRouter: Contract
     let pairRouter: Contract
+    let pairUtils: Contract
     let tokenBase: Contract
     let tokenQuote: Contract
     let orderNFT: Contract
@@ -42,6 +43,7 @@ describe('HybridxOrderBook', () => {
         orderBookFactory = fixture.orderBookFactory
         orderBookRouter = fixture.orderBookRouter
         pairRouter = fixture.pairRouter
+        pairUtils = fixture.pairUtils
         tokenBase = fixture.tokenA
         tokenQuote = fixture.tokenB
         orderNFT = fixture.orderNFT
@@ -64,13 +66,13 @@ describe('HybridxOrderBook', () => {
         result = await orderBookRouter.getOrderBook(tokenBase.address, tokenQuote.address, bigNumberify(2))
         printOrderBook(result)
 
-        result = await pairRouter.getAmountsOut(expandTo18Decimals(1), [tokenBase.address, tokenQuote.address])
+        result = await pairUtils.getAmountsOut(expandTo18Decimals(1), [tokenBase.address, tokenQuote.address])
         console.log(formatUnits(result.amounts[0], 18),
             formatUnits(result.amounts[1], 6),
             formatUnits(result.nextReserves[0], 18),
             formatUnits(result.nextReserves[1], 6))
 
-        result = await pairRouter.getAmountsIn(expandTo6Decimals(1), [tokenBase.address, tokenQuote.address])
+        result = await pairUtils.getAmountsIn(expandTo6Decimals(1), [tokenBase.address, tokenQuote.address])
         console.log(formatUnits(result.amounts[0], 18),
             formatUnits(result.amounts[1], 6),
             formatUnits(result.nextReserves[0], 18),

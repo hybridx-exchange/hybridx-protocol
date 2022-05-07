@@ -109,42 +109,40 @@ library PairLibrary {
     }
 
     // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOutWithNextReserves(address factory, uint amountIn, address[] memory path) internal view
-    returns (uint[] memory amounts, uint[] memory nextReserves) {
+    function getAmountsOutWithExtra(address factory, uint amountIn, address[] memory path) internal view
+    returns (uint[] memory amounts, uint[] memory extra) {
         require(path.length >= 2, 'INVALID_PATH');
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
-        nextReserves = new uint[](6 * (path.length - 1));
+        extra = new uint[](6 * (path.length - 1));
         address config = IPairFactory(factory).config();
         for (uint i; i < path.length - 1; i++) {
             uint index = 6 * i;
             address orderBook = getOrderBook(config, path[i], path[i + 1]);
             if (orderBook != address(0)) {
-                uint[] memory extra;
-                (amounts[i + 1], extra) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
-                (nextReserves[index], nextReserves[index + 1]) = IOrderBook(orderBook).baseToken() == path[i] ?
-                    (extra[0], extra[1]) : (extra[1], extra[0]);
-                (nextReserves[index + 2], nextReserves[index + 3], nextReserves[index + 4], nextReserves[index + 5]) =
-                    (extra[2], extra[3], extra[4], extra[5]);
+                uint[] memory extraTmp;
+                (amounts[i + 1], extraTmp) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
+                (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i] ?
+                    (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[0]);
+                (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
+                    (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
             else {
-                (amounts[i + 1], nextReserves) =
-                    getAmountOutWithExtra(factory, path[i], path[i + 1], amounts[i], 6 * i);
+                (amounts[i + 1], extra) = getAmountOutWithExtra(factory, path[i], path[i + 1], amounts[i], 6*i);
             }
         }
     }
 
     function getBestAmountsOut(address factory, uint amountIn, address[][] memory paths) internal view
-    returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
+    returns (address[] memory path, uint[] memory amounts, uint[] memory extra) {
         require(paths.length >= 1, 'INVALID_PATHS');
         uint index = paths.length;
         uint maxAmountOut;
         for (uint i; i<paths.length; i++) {
-            (uint[] memory amountsTmp, uint[] memory nextReservesTmp) =
-                getAmountsOutWithNextReserves(factory, amountIn, paths[i]);
+            (uint[] memory amountsTmp, uint[] memory extraTmp) = getAmountsOutWithExtra(factory, amountIn, paths[i]);
             if (maxAmountOut < amountsTmp[amountsTmp.length-1]) {
-                (index, maxAmountOut, amounts, nextReserves) =
-                    (i, amountsTmp[amountsTmp.length-1], amountsTmp, nextReservesTmp);
+                (index, maxAmountOut, amounts, extra) =
+                    (i, amountsTmp[amountsTmp.length-1], amountsTmp, extraTmp);
             }
         }
 
@@ -184,41 +182,39 @@ library PairLibrary {
     }
 
     // performs chained getAmountIn calculations on any number of pairs
-    function getAmountsInWithNextReserves(address factory, uint amountOut, address[] memory path) internal view
-    returns (uint[] memory amounts, uint[] memory nextReserves) {
+    function getAmountsInWithExtra(address factory, uint amountOut, address[] memory path) internal view
+    returns (uint[] memory amounts, uint[] memory extra) {
         require(path.length >= 2, 'INVALID_PATH');
         amounts = new uint[](path.length);
-        nextReserves = new uint[](6 * (path.length - 1));
+        extra = new uint[](6 * (path.length - 1));
         amounts[amounts.length - 1] = amountOut;
         address config = IPairFactory(factory).config();
         for (uint i = path.length - 1; i > 0; i--) {
             address orderBook = getOrderBook(config, path[i - 1], path[i]);
             if (orderBook != address(0)) {
-                uint[] memory extra;
+                uint[] memory extraTmp;
                 uint index = 6 * (i - 1);
-                (amounts[i - 1], extra) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
-                (nextReserves[index], nextReserves[index + 1]) = IOrderBook(orderBook).baseToken() == path[i - 1] ?
-                    (extra[0], extra[1]) : (extra[1], extra[2]);
-                (nextReserves[index + 2], nextReserves[index + 3], nextReserves[index + 4], nextReserves[index + 5]) =
-                    (extra[2], extra[2], extra[4], extra[5]);
+                (amounts[i - 1], extraTmp) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
+                (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i - 1] ?
+                    (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[2]);
+                (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
+                    (extraTmp[2], extraTmp[2], extraTmp[4], extraTmp[5]);
             }
             else {
-                (amounts[i - 1], nextReserves) =
-                    getAmountInWithExtra(factory, path[i - 1], path[i], amounts[i], 6 * (i - 1));
+                (amounts[i - 1], extra) = getAmountInWithExtra(factory, path[i - 1], path[i], amounts[i], 6 * (i - 1));
             }
         }
     }
 
     function getBestAmountsIn(address factory, uint amountOut, address[][] memory paths) internal view
-    returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves) {
+    returns (address[] memory path, uint[] memory amounts, uint[] memory extra) {
         require(paths.length >= 1, 'INVALID_PATHS');
         uint index;
         uint minAmountIn = type(uint).max;
         for (uint i; i<paths.length; i++){
-            (uint[] memory amountsTmp, uint[] memory nextReservesTmp) =
-                getAmountsInWithNextReserves(factory, amountOut, paths[i]);
+            (uint[] memory amountsTmp, uint[] memory extraTmp) = getAmountsInWithExtra(factory, amountOut, paths[i]);
             if (minAmountIn > amountsTmp[0]) {
-                (index, minAmountIn, amounts, nextReserves) = (i, amountsTmp[0], amountsTmp, nextReservesTmp);
+                (index, minAmountIn, amounts, extra) = (i, amountsTmp[0], amountsTmp, extraTmp);
             }
         }
 
