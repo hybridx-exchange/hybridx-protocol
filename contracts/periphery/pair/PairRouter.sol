@@ -15,7 +15,7 @@ contract PairRouter is IPairRouter {
     address public override config;
 
     modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'PairRouter: EXPIRED');
+        require(deadline >= block.timestamp, 'EXPIRED');
         _;
     }
 
@@ -49,12 +49,12 @@ contract PairRouter is IPairRouter {
             } else {
                 uint amountBOptimal = PairLibrary.quote(amountADesired, reserveA, reserveB);
                 if (amountBOptimal <= amountBDesired) {
-                    require(amountBOptimal >= amountBMin, 'PairRouter: INSUFFICIENT_B_AMOUNT');
+                    require(amountBOptimal >= amountBMin, 'INSUFFICIENT_B_AMOUNT');
                     (amountA, amountB) = (amountADesired, amountBOptimal);
                 } else {
                     uint amountAOptimal = PairLibrary.quote(amountBDesired, reserveB, reserveA);
                     assert(amountAOptimal <= amountADesired);
-                    require(amountAOptimal >= amountAMin, 'PairRouter: INSUFFICIENT_A_AMOUNT');
+                    require(amountAOptimal >= amountAMin, 'INSUFFICIENT_A_AMOUNT');
                     (amountA, amountB) = (amountAOptimal, amountBDesired);
                 }
             }
@@ -120,8 +120,8 @@ contract PairRouter is IPairRouter {
         (uint amount0, uint amount1) = IPair(pair).burn(to);
         (address token0,) = PairLibrary.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
-        require(amountA >= amountAMin, 'PairRouter: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= amountBMin, 'PairRouter: INSUFFICIENT_B_AMOUNT');
+        require(amountA >= amountAMin, 'INSUFFICIENT_A_AMOUNT');
+        require(amountB >= amountBMin, 'INSUFFICIENT_B_AMOUNT');
     }
 
     function removeLiquidityETH(
@@ -244,7 +244,7 @@ contract PairRouter is IPairRouter {
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
         address factory = IConfig(config).getPairFactory();
         amounts = PairLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(factory, path[0], path[1]), amounts[0]
         );
@@ -260,7 +260,7 @@ contract PairRouter is IPairRouter {
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
         address factory = IConfig(config).getPairFactory();
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
+        require(amounts[0] <= amountInMax, 'EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(factory, path[0], path[1]), amounts[0]
         );
@@ -276,9 +276,9 @@ contract PairRouter is IPairRouter {
         returns (uint[] memory amounts)
     {
         (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
-        require(path[0] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[0] == WETH, 'INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, msg.value, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(PairLibrary.getPair(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
@@ -292,9 +292,9 @@ contract PairRouter is IPairRouter {
         returns (uint[] memory amounts)
     {
         (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
-        require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[path.length - 1] == WETH, 'INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
+        require(amounts[0] <= amountInMax, 'EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(factory, path[0], path[1]), amounts[0]
         );
@@ -311,9 +311,9 @@ contract PairRouter is IPairRouter {
         returns (uint[] memory amounts)
     {
         (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
-        require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[path.length - 1] == WETH, 'INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(factory, path[0], path[1]), amounts[0]
         );
@@ -331,9 +331,9 @@ contract PairRouter is IPairRouter {
         returns (uint[] memory amounts)
     {
         (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
-        require(path[0] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[0] == WETH, 'INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= msg.value, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
+        require(amounts[0] <= msg.value, 'EXCESSIVE_INPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
         assert(IWETH(WETH).transfer(PairLibrary.getPair(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
@@ -355,7 +355,11 @@ contract PairRouter is IPairRouter {
                 (uint reserve0, uint reserve1,) = pair.getReserves();
                 (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = PairLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+                amountOutput = PairLibrary.getSpecificAmountOut(PairLibrary.getOrderBook(config, input, output),
+                    input,
+                    amountInput,
+                    reserveInput,
+                    reserveOutput);
             }
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
             address to = i < path.length - 2 ? PairLibrary.getPair(factory, output, path[i + 2]) : _to;
@@ -377,7 +381,7 @@ contract PairRouter is IPairRouter {
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
             IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT'
+            'INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
 
@@ -394,7 +398,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
     {
         address WETH = IConfig(config).WETH();
-        require(path[0] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[0] == WETH, 'INVALID_PATH');
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
         assert(IWETH(WETH).transfer(PairLibrary.getPair(IConfig(config).getPairFactory(), path[0], path[1]), amountIn));
@@ -402,7 +406,7 @@ contract PairRouter is IPairRouter {
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
             IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT'
+            'INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
 
@@ -419,97 +423,14 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
     {
         address WETH = IConfig(config).WETH();
-        require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
+        require(path[path.length - 1] == WETH, 'INVALID_PATH');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(IConfig(config).getPairFactory(), path[0], path[1]), amountIn
         );
         _swapSupportingFeeOnTransferTokens(path, address(this));
         uint amountOut = IERC20(WETH).balanceOf(address(this));
-        require(amountOut >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amountOut >= amountOutMin, 'INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
-    }
-
-    // **** LIBRARY FUNCTIONS ****
-    function quote(uint amountA, uint reserveA, uint reserveB) public pure virtual override returns (uint amountB) {
-        return PairLibrary.quote(amountA, reserveA, reserveB);
-    }
-
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut)
-        public
-        pure
-        virtual
-        override
-        returns (uint amountOut)
-    {
-        return PairLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
-    }
-
-    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut)
-        public
-        pure
-        virtual
-        override
-        returns (uint amountIn)
-    {
-        return PairLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
-    }
-
-    function getAmountsOut(uint amountIn, address[] memory path)
-        public
-        view
-        virtual
-        override
-        returns (uint[] memory amounts, uint[] memory nextReserves)
-    {
-        return PairLibrary.getAmountsOutWithNextReserves(IConfig(config).getPairFactory(), amountIn, path);
-    }
-
-    function getAmountsIn(uint amountOut, address[] memory path)
-        public
-        view
-        virtual
-        override
-        returns (uint[] memory amounts, uint[] memory nextReserves)
-    {
-        return PairLibrary.getAmountsInWithNextReserves(IConfig(config).getPairFactory(), amountOut, path);
-    }
-
-    function getBestAmountsOut(uint amountIn, address[] memory paths, uint[] memory lens)
-        external
-        view
-        virtual
-        override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
-    {
-        address[][] memory groupedPaths = new address[][](lens.length);
-        uint k;
-        for (uint i; i<lens.length; i++) {
-            groupedPaths[i] = new address[](lens[i]);
-            for (uint j; j<groupedPaths[i].length; j++) {
-                groupedPaths[i][j] = paths[k++];
-            }
-        }
-        require(paths.length == k, "PairRouter: INVALID_PATHS");
-        return PairLibrary.getBestAmountsOut(IConfig(config).getPairFactory(), amountIn, groupedPaths);
-    }
-
-    function getBestAmountsIn(uint amountOut, address[] memory paths, uint[] memory lens)
-        external
-        view
-        virtual
-        override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
-    {
-        address[][] memory groupedPaths = new address[][](lens.length);
-        uint k;
-        for (uint i; i<lens.length; i++) {
-            groupedPaths[i] = new address[](lens[i]);
-            for (uint j; j<groupedPaths[i].length; j++) {
-                groupedPaths[i][j] = paths[k++];
-            }
-        }
-        require(paths.length == k, "PairRouter: INVALID_PATHS");
-        return PairLibrary.getBestAmountsIn(IConfig(config).getPairFactory(), amountOut, groupedPaths);
     }
 }

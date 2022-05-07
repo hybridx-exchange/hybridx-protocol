@@ -9,6 +9,7 @@ import ERC20Decimal6 from '../../build/ERC20Decimal6.json'
 import Config from '../../build/Config.json'
 import PairFactory from '../../build/PairFactory.json'
 import PairRouter from '../../build/PairRouter.json'
+import PairUtils from '../../build/PairUtils.json'
 import Pair from '../../build/Pair.json'
 import OrderBookFactory from '../../build/OrderBookFactory.json'
 import OrderBookRouter from '../../build/OrderBookRouter.json'
@@ -22,6 +23,7 @@ interface FactoryFixture {
   config: Contract
   pairFactory: Contract
   pairRouter: Contract
+  pairUtils: Contract
   orderBookFactory: Contract
   orderBookRouter: Contract
 }
@@ -42,8 +44,9 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   await config.setOrderBookByteCode(utils.arrayify('0x' + OrderBook.evm.bytecode.object), overrides)
   await config.setOrderNFTByteCode(utils.arrayify('0x' + OrderNFT.evm.bytecode.object), overrides)
   const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
+  const pairUtils = await deployContract(wallet, PairUtils, [config.address], overrides)
   const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
-  return { tokenA, tokenB, config, pairFactory, pairRouter, orderBookFactory, orderBookRouter }
+  return { tokenA, tokenB, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
 }
 
 interface PairFixture extends FactoryFixture {
@@ -60,7 +63,7 @@ interface OrderBookFixture extends PairFixture {
 }
 
 export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<OrderBookFixture> {
-  const { tokenA, tokenB, config, pairFactory, pairRouter, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
+  const { tokenA, tokenB, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
 
   const tokenAAmount = expandTo18Decimals(1)
   const tokenBAmount = expandTo6Decimals(2)
@@ -86,5 +89,5 @@ export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[
   const orderNFTAddress = await orderBook.orderNFT();
   const orderNFT = new Contract(orderNFTAddress, JSON.stringify(OrderNFT.abi), provider).connect(wallet)
 
-  return { config, pairFactory, pairRouter, orderBookFactory, orderBookRouter, token0, token1, pair, baseToken, quoteToken, orderBook, tokenA, tokenB, orderNFT }
+  return { config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter, token0, token1, pair, baseToken, quoteToken, orderBook, tokenA, tokenB, orderNFT }
 }

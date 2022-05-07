@@ -161,7 +161,7 @@ contract OrderBookRouter is IOrderBookRouter {
     virtual
     override
     view
-    returns (uint[] memory amounts) { //返回ammAmountIn, ammAmountOut, orderAmountIn, orderAmountOut, fee
+    returns (uint[] memory amounts) { //ammAmountIn, ammAmountOut, orderAmountIn, orderAmountOut, fee
         require(tokenA != tokenB, 'HybridRouter: Invalid_Path');
         address orderBook = IOrderBookFactory(IConfig(config).getOrderBookFactory()).getOrderBook(tokenA, tokenB);
         if (orderBook != address(0)) {

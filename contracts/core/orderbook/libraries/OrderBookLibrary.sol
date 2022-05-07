@@ -264,7 +264,7 @@ library OrderBookLibrary {
     @param price                   price of limit order
     @param reserveBase             reserve amount of base token
     @param reserveQuote            reserve amount of quote token
-    @return amounts                [amm amount in, amm amount out, order amount in, order amount out with fee,
+    @return amounts                [amm amount in, amm amount out, order amount in, order amount out with subsidy fee,
                                     community fee, amount left, amount expert, price to]
 **************************************************************************************************************/
     function getAmountsForBuyLimitOrder(
@@ -354,7 +354,7 @@ library OrderBookLibrary {
     @param price                   price of limit order
     @param reserveBase             reserve amount of base token
     @param reserveQuote            reserve amount of quote token
-    @return amounts                [amm amount in, amm amount out, order amount in, order amount out with fee,
+    @return amounts                [amm amount in, amm amount out, order amount in, order amount out with subsidy fee,
                                     community fee, amount left, amount expect, price to]
     **************************************************************************************************************/
     function getAmountsForSellLimitOrder(
