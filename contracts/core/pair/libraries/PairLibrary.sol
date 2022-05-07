@@ -96,18 +96,6 @@ library PairLibrary {
         }
     }
 
-    function getAmountOutWithExtra(address factory, address tokenIn, address tokenOut, uint amountIn, uint indexStart)
-    internal view returns (uint amountOut, uint[] memory extraOut) {
-        (uint reserveIn, uint reserveOut,) = getReserves(factory, tokenIn, tokenOut);
-        amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
-        (
-            extraOut[indexStart],
-            extraOut[indexStart + 1],
-            extraOut[indexStart + 2],
-            extraOut[indexStart + 3]
-        ) = (reserveIn + amountIn, reserveOut - amountOut, amountIn, amountOut);
-    }
-
     // performs chained getAmountOut calculations on any number of pairs
     function getAmountsOutWithExtra(address factory, uint amountIn, address[] memory path) internal view
     returns (uint[] memory amounts, uint[] memory extra) {
@@ -128,7 +116,10 @@ library PairLibrary {
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
             else {
-                (amounts[i + 1], extra) = getAmountOutWithExtra(factory, path[i], path[i + 1], amounts[i], 6*i);
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
+                amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+                (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
+                    (reserveIn + amounts[i], reserveOut - amounts[i + 1], amounts[i], amounts[i + 1]);
             }
         }
     }
@@ -169,18 +160,6 @@ library PairLibrary {
         }
     }
 
-    function getAmountInWithExtra(address factory, address tokenIn, address tokenOut, uint amountOut, uint indexStart)
-    internal view returns (uint amountIn, uint[] memory extraOut) {
-        (uint reserveIn, uint reserveOut,) = getReserves(factory, tokenIn, tokenOut);
-        amountIn = getAmountIn(amountOut, reserveIn, reserveOut);
-        (
-            extraOut[indexStart],
-            extraOut[indexStart + 1],
-            extraOut[indexStart + 2],
-            extraOut[indexStart + 3]
-        ) = (reserveIn + amountIn, reserveOut - amountOut, amountIn, amountOut);
-    }
-
     // performs chained getAmountIn calculations on any number of pairs
     function getAmountsInWithExtra(address factory, uint amountOut, address[] memory path) internal view
     returns (uint[] memory amounts, uint[] memory extra) {
@@ -191,9 +170,9 @@ library PairLibrary {
         address config = IPairFactory(factory).config();
         for (uint i = path.length - 1; i > 0; i--) {
             address orderBook = getOrderBook(config, path[i - 1], path[i]);
+            uint index = 6 * (i - 1);
             if (orderBook != address(0)) {
                 uint[] memory extraTmp;
-                uint index = 6 * (i - 1);
                 (amounts[i - 1], extraTmp) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
                 (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i - 1] ?
                     (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[2]);
@@ -201,7 +180,10 @@ library PairLibrary {
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
             else {
-                (amounts[i - 1], extra) = getAmountInWithExtra(factory, path[i - 1], path[i], amounts[i], 6 * (i - 1));
+                (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
+                amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+                (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
+                    (reserveIn + amounts[i - 1], reserveOut - amounts[i], amounts[i - 1], amounts[i]);
             }
         }
     }

@@ -51,13 +51,22 @@ describe('HybridxOrderBook', () => {
 
     it('priceList test', async () => {
         console.log("price", (await orderBook.getPrice()).toString())
+        let result = await pairUtils.getAmountsOut(expandTo18Decimals(1), [tokenBase.address, tokenQuote.address])
+        console.log(formatUnits(result.amounts[0], 18),
+            formatUnits(result.amounts[1], 6),
+            formatUnits(result.extra[0], 18),
+            formatUnits(result.extra[1], 6),
+            formatUnits(result.extra[2], 18),
+            formatUnits(result.extra[3], 6),
+            formatUnits(result.extra[4], 18),
+            formatUnits(result.extra[5], 6))
         await tokenQuote.approve(orderBookRouter.address, expandTo6Decimals(100000))
         await tokenBase.approve(orderBookRouter.address, expandTo18Decimals(100000))
         let deadline = Math.floor(Date.now() / 1000) + 200;
         await orderBookRouter.buyWithToken(expandTo6Decimals(1), bigNumberify("2000000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)
         deadline = Math.floor(Date.now() / 1000) + 200;
         await orderBookRouter.buyWithToken(expandTo6Decimals(1), bigNumberify("1900000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)
-        let result = await orderBookRouter.getOrderBook(tokenBase.address, tokenQuote.address, bigNumberify(2))
+        result = await orderBookRouter.getOrderBook(tokenBase.address, tokenQuote.address, bigNumberify(2))
         printOrderBook(result)
 
         deadline = Math.floor(Date.now() / 1000) + 200;
@@ -87,6 +96,6 @@ describe('HybridxOrderBook', () => {
             formatUnits(result.extra[5], 6))
 
         result = await orderNFT.getUserOrders(wallet.address);
-        console.log(result)
+        //console.log(result)
     })
 })

@@ -580,8 +580,17 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             uint amountAmmLeft;
-            (amountAmmLeft,,, extra[0], extra[1]) =
-                OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1], price, params[6]);
+            if (params[4] == LIMIT_BUY) {
+                (amountAmmLeft, extra[1], extra[0], extra[1], extra[0]) =
+                    OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
+                        price, params[6]);
+            }
+            else {
+                (amountAmmLeft, extra[0], extra[1], extra[0], extra[1]) =
+                    OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
+                        price, params[6]);
+            }
+
             if (amountAmmLeft == 0) {
                 break;
             }
@@ -604,7 +613,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
             extra[3] = params[4] == LIMIT_BUY ?
                 OrderBookLibrary.getAmountOut(amountInLeft, params[1], params[0]) :
                 OrderBookLibrary.getAmountOut(amountInLeft, params[0], params[1]);
-
+            (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(extra[3])) :
+                (params[0] + extra[2], params[1].sub(extra[3]));
             amountOutGet += extra[3];
         }
     }
@@ -622,9 +632,17 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             uint amountAmmLeft;
-            (amountAmmLeft,,, extra[0], extra[1]) =
-                OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
-                    price, params[6]);
+            if (params[4] == LIMIT_BUY) {
+                (amountAmmLeft, extra[1], extra[0], extra[1], extra[0]) =
+                    OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
+                        price, params[6]);
+            }
+            else {
+                (amountAmmLeft, extra[0], extra[1], extra[0], extra[1]) =
+                    OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
+                        price, params[6]);
+            }
+
             if (amountAmmLeft == 0) {
                 break;
             }
@@ -648,6 +666,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
                 OrderBookLibrary.getAmountIn(amountOutLeft, params[0], params[1]);
             amountInGet += extra[2];
             extra[3] = amountOutLeft;
+            (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(amountOutLeft)) :
+                (params[0] + extra[2], params[1].sub(amountOutLeft));
         }
     }
 
