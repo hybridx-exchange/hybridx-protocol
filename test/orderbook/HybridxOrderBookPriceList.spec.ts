@@ -69,14 +69,22 @@ describe('HybridxOrderBook', () => {
         result = await pairUtils.getAmountsOut(expandTo18Decimals(1), [tokenBase.address, tokenQuote.address])
         console.log(formatUnits(result.amounts[0], 18),
             formatUnits(result.amounts[1], 6),
-            formatUnits(result.nextReserves[0], 18),
-            formatUnits(result.nextReserves[1], 6))
+            formatUnits(result.extra[0], 18),
+            formatUnits(result.extra[1], 6),
+            formatUnits(result.extra[2], 18),
+            formatUnits(result.extra[3], 6),
+            formatUnits(result.extra[4], 18),
+            formatUnits(result.extra[5], 6))
 
         result = await pairUtils.getAmountsIn(expandTo6Decimals(1), [tokenBase.address, tokenQuote.address])
         console.log(formatUnits(result.amounts[0], 18),
             formatUnits(result.amounts[1], 6),
-            formatUnits(result.nextReserves[0], 18),
-            formatUnits(result.nextReserves[1], 6))
+            formatUnits(result.extra[0], 18),
+            formatUnits(result.extra[1], 6),
+            formatUnits(result.extra[2], 18),
+            formatUnits(result.extra[3], 6),
+            formatUnits(result.extra[4], 18),
+            formatUnits(result.extra[5], 6))
 
         result = await orderNFT.getUserOrders(wallet.address);
         console.log(result)

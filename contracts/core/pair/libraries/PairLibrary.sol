@@ -198,7 +198,7 @@ library PairLibrary {
                 (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i - 1] ?
                     (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[2]);
                 (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
-                    (extraTmp[2], extraTmp[2], extraTmp[4], extraTmp[5]);
+                    (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
             else {
                 (amounts[i - 1], extra) = getAmountInWithExtra(factory, path[i - 1], path[i], amounts[i], 6 * (i - 1));
