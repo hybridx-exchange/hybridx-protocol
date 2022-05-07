@@ -568,9 +568,9 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
                                     called by pair and router
      *******************************************************************************************************/
     function getAmountOutForMovePrice(address tokenIn, uint amountInOffer) external override view
-    returns (uint amountOutGet, uint nextReserveBase, uint nextReserveQuote, uint[] memory extra) {
+    returns (uint amountOutGet, uint[] memory extra) {
         uint[] memory params = new uint[](7);
-        extra = new uint[](4); //ammIn, ammOut, orderIn, orderOutWithSubsidyFee
+        extra = new uint[](6); //nextReserveIn, nextReserveOut, ammIn, ammOut, orderIn, orderOutWithSubsidyFee
         (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
         (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
         (params[4], params[5]) = getDirection(tokenIn);//tradeDir - orderDir
@@ -580,7 +580,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             uint amountAmmLeft;
-            (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
+            (amountAmmLeft,,, extra[0], extra[1]) =
                 OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1], price, params[6]);
             if (amountAmmLeft == 0) {
                 break;
@@ -588,8 +588,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountOutForTakePrice
                 (params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
-            extra[2] += amountInForTake;
-            extra[3] += amountOutWithFee.sub(communityFee);
+            extra[4] += amountInForTake;
+            extra[5] += amountOutWithFee.sub(communityFee);
             amountOutGet += amountOutWithFee.sub(communityFee);
             amountInLeft = amountInLeft.sub(amountInForTake);
             if (amountInForTake == amountAmmLeft) {
@@ -600,19 +600,19 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         }
 
         if (amountInLeft > 0) {
-            extra[0] = amountInLeft;
-            extra[1] = params[4] == LIMIT_BUY ?
+            extra[2] = amountInLeft;
+            extra[3] = params[4] == LIMIT_BUY ?
                 OrderBookLibrary.getAmountOut(amountInLeft, params[1], params[0]) :
                 OrderBookLibrary.getAmountOut(amountInLeft, params[0], params[1]);
 
-            amountOutGet += extra[1];
+            amountOutGet += extra[3];
         }
     }
 
     function getAmountInForMovePrice(address tokenOut, uint amountOutOffer) external override view
-    returns (uint amountInGet, uint nextReserveBase, uint nextReserveQuote, uint[] memory extra) {
+    returns (uint amountInGet, uint[] memory extra) {
         uint[] memory params = new uint[](7);
-        extra = new uint[](4); //ammIn, ammOut, orderIn, orderOutWithSubsidyFee
+        extra = new uint[](6); //nextReserveIn, nextReserveOut, ammIn, ammOut, orderIn, orderOutWithSubsidyFee
         (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
         (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
         (params[5], params[4]) = getDirection(tokenOut);//orderDir - tradeDir
@@ -622,7 +622,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (uint price, uint amount) = nextBook(params[5], 0);
         while (price != 0) {
             uint amountAmmLeft;
-            (amountAmmLeft,,, nextReserveBase, nextReserveQuote) =
+            (amountAmmLeft,,, extra[0], extra[1]) =
                 OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
                     price, params[6]);
             if (amountAmmLeft == 0) {
@@ -631,8 +631,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountInForTakePrice
                 (params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
-            extra[2] += amountInForTake;
-            extra[3] += amountOutWithFee.sub(communityFee);
+            extra[4] += amountInForTake;
+            extra[5] += amountOutWithFee.sub(communityFee);
             amountInGet += amountInForTake;
             amountOutLeft = amountOutLeft.sub(amountOutWithFee.sub(communityFee));
             if (amountOutWithFee == amountAmmLeft) {
@@ -643,11 +643,11 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         }
 
         if (amountOutLeft > 0) {
-            extra[0] = params[4] == LIMIT_BUY ?
+            extra[2] = params[4] == LIMIT_BUY ?
                 OrderBookLibrary.getAmountIn(amountOutLeft, params[1], params[0]) :
                 OrderBookLibrary.getAmountIn(amountOutLeft, params[0], params[1]);
-            amountInGet += extra[0];
-            extra[1] = amountOutLeft;
+            amountInGet += extra[2];
+            extra[3] = amountOutLeft;
         }
     }
 
