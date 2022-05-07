@@ -76,7 +76,7 @@ library PairLibrary {
         for (uint i; i < path.length - 1; i++) {
             address orderBook = getOrderBook(config, path[i], path[i + 1]);
             if (orderBook != address(0)) {
-                (amounts[i + 1],,) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
+                (amounts[i + 1],,,) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
@@ -85,6 +85,16 @@ library PairLibrary {
         }
     }
 
+    // performs chained getAmountOut calculations on any number of pairs
+    function getSpecificAmountOut(address orderBook, address tokenIn, uint amountIn, uint reserveIn, uint reserveOut)
+    internal view returns (uint amountOut) {
+        if (orderBook != address(0)) {
+            (amountOut,,,) = IOrderBook(orderBook).getAmountOutForMovePrice(tokenIn, amountIn);
+        }
+        else {
+            amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
+        }
+    }
 
     // performs chained getAmountOut calculations on any number of pairs
     function getAmountsOutWithNextReserves(address factory, uint amountIn, address[] memory path) internal view
@@ -100,7 +110,7 @@ library PairLibrary {
                 address baseToken = IOrderBook(orderBook).baseToken();
                 uint nextReserveBase;
                 uint nextReserveQuote;
-                (amounts[i + 1], nextReserveBase, nextReserveQuote) =
+                (amounts[i + 1], nextReserveBase, nextReserveQuote,) =
                     IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
                 (nextReserves[2 * i], nextReserves[2 * i + 1]) = baseToken == path[i] ?
                     (nextReserveBase, nextReserveQuote) : (nextReserveQuote, nextReserveBase);
@@ -141,7 +151,7 @@ library PairLibrary {
         for (uint i = path.length - 1; i > 0; i--) {
             address orderBook = getOrderBook(config, path[i - 1], path[i]);
             if (orderBook != address(0)) {
-                (amounts[i - 1],,) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
+                (amounts[i - 1],,,) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
@@ -164,7 +174,7 @@ library PairLibrary {
                 address baseToken = IOrderBook(orderBook).baseToken();
                 uint nextReserveBase;
                 uint nextReserveQuote;
-                (amounts[i - 1], nextReserveBase, nextReserveQuote) =
+                (amounts[i - 1], nextReserveBase, nextReserveQuote,) =
                     IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
                 (nextReserves[2 * (i - 1)], nextReserves[2 * (i - 1) + 1]) = baseToken == path[i - 1] ?
                     (nextReserveBase, nextReserveQuote) : (nextReserveQuote, nextReserveBase);

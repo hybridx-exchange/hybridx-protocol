@@ -355,7 +355,11 @@ contract PairRouter is IPairRouter {
                 (uint reserve0, uint reserve1,) = pair.getReserves();
                 (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = PairLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+                amountOutput = PairLibrary.getSpecificAmountOut(PairLibrary.getOrderBook(config, input, output),
+                    input,
+                    amountInput,
+                    reserveInput,
+                    reserveOutput);
             }
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
             address to = i < path.length - 2 ? PairLibrary.getPair(factory, output, path[i + 2]) : _to;

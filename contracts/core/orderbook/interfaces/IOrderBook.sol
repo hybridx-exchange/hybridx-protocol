@@ -56,11 +56,11 @@ interface IOrderBook {
     function safeRefund(address token, address payable to) external;
     //get amount out for move price, include swap and take, and call by uniswap v2 pair
     function getAmountOutForMovePrice(address tokenIn, uint amountInOffer) external view
-        returns (uint amountOut, uint nextReserveBase, uint nextReserveQuote);
+        returns (uint amountOut, uint nextReserveBase, uint nextReserveQuote, uint[] memory extra);
 
     //get amount in for move price, include swap and take, and call by uniswap v2 pair
     function getAmountInForMovePrice(address tokenOut, uint amountOutOffer) external view
-        returns (uint amountIn, uint nextReserveBase, uint nextReserveQuote);
+        returns (uint amountIn, uint nextReserveBase, uint nextReserveQuote, uint[] memory extra);
 
     //take order when move price by uniswap v2 pair
     function takeOrderWhenMovePrice(address tokenIn, uint amountIn, address to) external
