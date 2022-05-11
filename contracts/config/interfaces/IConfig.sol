@@ -11,7 +11,9 @@ interface IConfig {
     function setOrderNFTByteCode(bytes memory byteCode) external;
     function getOrderBookByteCode() external view returns (bytes memory bytecode);
     function setOrderBookByteCode(bytes memory byteCode) external;
+    function priceStepFactor() external returns (uint);
     function priceStepFactorUpdate(uint newPriceStepFactor) external;
+    function priceStepMap(address orderBook) external returns (uint);
     function protocolFeeRateUpdate(address orderBook, uint newProtocolFeeRate) external;
     function subsidyFeeRateUpdate(address orderBook, uint newSubsidyFeeRate) external;
     function priceStepUpdate(address orderBook, uint newPriceStep) external;

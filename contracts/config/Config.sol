@@ -10,12 +10,12 @@ import "./interfaces/IConfig.sol";
 @ens                            cherideal.eth
 **************************************************************************************************************/
 contract Config is Ownable, IConfig {
-    uint public priceStepFactor = 1;          // default is 1 / 10000
     uint public defaultProtocolFeeRate = 30;  // default is 30 / 10000
     uint public defaultSubsidyFeeRate = 50;   // default is 50% of ProtocolFeeRate
     mapping(address => uint) public protocolFeeRateMap;
     mapping(address => uint) public subsidyFeeRateMap;
-    mapping(address => uint) public priceStepMap;
+    uint public override priceStepFactor = 1;          // default is 1 / 10000
+    mapping(address => uint) public override priceStepMap;
 
     address public override WETH;
 
@@ -99,6 +99,6 @@ contract Config is Ownable, IConfig {
     //get price step
     function priceStep(address orderBook, uint price) external override view returns (uint) {
         if (priceStepMap[orderBook] != 0) return priceStepMap[orderBook];
-        return price <= 10000 ? 1 : (price / 10000) * priceStepFactor;
+        return price <= 10000 ? 10000 : (price / 10000) * priceStepFactor;
     }
 }
