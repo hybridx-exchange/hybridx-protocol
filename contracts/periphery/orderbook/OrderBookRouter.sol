@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../../core/orderbook/libraries/OrderBookLibrary.sol";
+import "../../deps/interfaces/IERC20.sol";
 import "../../deps/interfaces/IWETH.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "./interfaces/IOrderBookRouter.sol";
@@ -13,6 +14,9 @@ import "./interfaces/IOrderBookRouter.sol";
 **************************************************************************************************************/
 contract OrderBookRouter is IOrderBookRouter {
     address public override config;
+
+    uint internal constant LIMIT_BUY = 1;
+    uint internal constant LIMIT_SELL = 2;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'HybridRouter: EXPIRED');
@@ -153,8 +157,8 @@ contract OrderBookRouter is IOrderBookRouter {
     @param price                   price of limit order
     @param tokenA                  one token of order book
     @param tokenB                  another token of order book
-    @return amounts                [amm amount in, amm amount out, order amount in, order amount out,
-                                    order fee, amount left, price to]
+    @return amounts                [amm amount in, amm amount out, order amount in, order amount out with subsidy fee,
+                                    community fee, amount left, amount expert, price to]
     **************************************************************************************************************/
     function getAmountsForBuy(uint amountOffer, uint price, address tokenA, address tokenB)
     external
@@ -172,6 +176,18 @@ contract OrderBookRouter is IOrderBookRouter {
                 baseToken,
                 quoteToken);
             amounts = OrderBookLibrary.getAmountsForBuyLimitOrder(orderBook, amountOffer, price, reserveBase, reserveQuote);
+        }
+        else { //order book not exist, tokenA = base, tokenB = quote
+            amounts = new uint[](8);
+            (uint reserveBase, uint reserveQuote) = OrderBookLibrary.getReserves(OrderBookLibrary.getPair(config,
+                tokenA, tokenB), tokenA, tokenB);
+            uint reserveBaseNew;
+            uint reserveQuoteNew;
+            uint baseDecimal = IERC20(tokenA).decimals();
+            (amounts[5], amounts[0], amounts[1], reserveBaseNew, reserveQuoteNew) = OrderBookLibrary
+                .getAmountForMovePrice(LIMIT_BUY, amountOffer, reserveBase, reserveQuote, price, baseDecimal);
+            amounts[7] = OrderBookLibrary.getPrice(reserveBaseNew, reserveQuoteNew, baseDecimal);
+            (amounts[2], amounts[3], amounts[4], amounts[6]) = (0, 0, 0, 0);
         }
     }
 
@@ -191,6 +207,18 @@ contract OrderBookRouter is IOrderBookRouter {
                 baseToken,
                 quoteToken);
             amounts = OrderBookLibrary.getAmountsForSellLimitOrder(orderBook, amountOffer, price, reserveBase, reserveQuote);
+        }
+        else { //order book not exist, tokenA = base, tokenB = quote
+            amounts = new uint[](8);
+            (uint reserveBase, uint reserveQuote) = OrderBookLibrary.getReserves(OrderBookLibrary.getPair(config,
+                tokenA, tokenB), tokenA, tokenB);
+            uint reserveBaseNew;
+            uint reserveQuoteNew;
+            uint baseDecimal = IERC20(tokenA).decimals();
+            (amounts[5], amounts[0], amounts[1], reserveBaseNew, reserveQuoteNew) = OrderBookLibrary
+                .getAmountForMovePrice(LIMIT_SELL, amountOffer, reserveBase, reserveQuote, price, baseDecimal);
+            amounts[7] = OrderBookLibrary.getPrice(reserveBaseNew, reserveQuoteNew, baseDecimal);
+            (amounts[2], amounts[3], amounts[4], amounts[6]) = (0, 0, 0, 0);
         }
     }
 
