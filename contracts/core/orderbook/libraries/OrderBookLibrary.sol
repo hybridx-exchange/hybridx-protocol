@@ -61,7 +61,7 @@ library OrderBookLibrary {
         require(tokenA != tokenB, 'IDENTICAL_ADDRESSES');
         address token0 = tokenA < tokenB ? tokenA : tokenB;
         require(token0 != address(0), 'ZERO_ADDRESS');
-        (uint112 reserve0, uint112 reserve1,) = IPair(pair).getReserves();
+        (uint112 reserve0, uint112 reserve1,) = pair != address(0) ? IPair(pair).getReserves() : (0, 0, 0);
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -69,6 +69,13 @@ library OrderBookLibrary {
     function getPrice(uint reserveBase, uint reserveQuote, uint baseDecimal) internal pure returns (uint price) {
         if (reserveBase != 0) {
             price = reserveQuote.mul(10 ** baseDecimal) / reserveBase;
+        }
+    }
+
+    function getPair(address config, address tokenA, address tokenB) internal view returns (address pair) {
+        address pairFactory = IConfig(config).getPairFactory();
+        if (pairFactory != address(0)){
+            return IPairFactory(pairFactory).getPair(tokenA, tokenB);
         }
     }
 
