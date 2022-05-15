@@ -15,4 +15,6 @@ interface IPairUtils {
         uint[] memory amounts, uint[] memory nextReserves);
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (
         uint[] memory amounts, uint[] memory nextReserves);
+    function getReserves(address tokenA, address tokenB) external view
+    returns (uint reserveA, uint reserveB);
 }
