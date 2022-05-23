@@ -61,7 +61,7 @@ contract PairUtils is IPairUtils {
         view
         virtual
         override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
+        returns (address[] memory path, uint[] memory amounts, uint[] memory extra)
     {
         address[][] memory groupedPaths = new address[][](lens.length);
         uint k;
@@ -80,7 +80,7 @@ contract PairUtils is IPairUtils {
         view
         virtual
         override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
+        returns (address[] memory path, uint[] memory amounts, uint[] memory extra)
     {
         address[][] memory groupedPaths = new address[][](lens.length);
         uint k;
