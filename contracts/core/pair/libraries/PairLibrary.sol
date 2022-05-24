@@ -117,9 +117,11 @@ library PairLibrary {
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
-                amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
-                (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
-                    (reserveIn + amounts[i], reserveOut - amounts[i + 1], amounts[i], amounts[i + 1]);
+                if (reserveIn > 0 && reserveOut > 0) {
+                    amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+                    (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
+                        (reserveIn + amounts[i], reserveOut - amounts[i + 1], amounts[i], amounts[i + 1]);
+                }
             }
         }
     }
@@ -181,9 +183,11 @@ library PairLibrary {
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
-                amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
-                (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
+                if (reserveIn > 0 && reserveOut > 0) {
+                    amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+                    (extra[index], extra[index + 1], extra[index + 2], extra[index + 3]) =
                     (reserveIn + amounts[i - 1], reserveOut - amounts[i], amounts[i - 1], amounts[i]);
+                }
             }
         }
     }
