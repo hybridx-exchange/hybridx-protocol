@@ -129,7 +129,7 @@ library PairLibrary {
     function getBestAmountsOut(address factory, uint amountIn, address[][] memory paths) internal view
     returns (address[] memory path, uint[] memory amounts, uint[] memory extra) {
         require(paths.length >= 1, 'INVALID_PATHS');
-        uint index = paths.length;
+        uint index;
         uint maxAmountOut;
         for (uint i; i<paths.length; i++) {
             (uint[] memory amountsTmp, uint[] memory extraTmp) = getAmountsOutWithExtra(factory, amountIn, paths[i]);
@@ -139,7 +139,6 @@ library PairLibrary {
             }
         }
 
-        assert(index != paths.length);
         path = paths[index];
     }
 
@@ -204,7 +203,6 @@ library PairLibrary {
             }
         }
 
-        assert(index != paths.length);
         path = paths[index];
     }
 }
