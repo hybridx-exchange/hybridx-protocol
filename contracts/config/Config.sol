@@ -86,14 +86,12 @@ contract Config is Ownable, IConfig {
         priceStepMap[orderBook] = newPriceStep;
     }
 
-    //get base token significant digits
-    function baseSignificantDigitsUpdate(address orderBook, uint newBaseSignificantDigits) external override {
+    function baseSignificantDigitsUpdate(address orderBook, uint newBaseSignificantDigits) external override onlyOwner {
         require(newBaseSignificantDigits > 0 && newBaseSignificantDigits <= 18);
         baseSignificantDigitsMap[orderBook] = newBaseSignificantDigits;
     }
 
-    //get quote token significant digits
-    function quoteSignificantDigitsUpdate(address orderBook, uint newQuoteSignificantDigits) external override {
+    function quoteSignificantDigitsUpdate(address orderBook, uint newQuoteSignificantDigits) external override onlyOwner {
         require(newQuoteSignificantDigits > 0 && newQuoteSignificantDigits <= 18);
         quoteSignificantDigitsMap[orderBook] = newQuoteSignificantDigits;
     }
