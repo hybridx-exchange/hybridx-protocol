@@ -20,6 +20,7 @@ import WETH from '../../build/WETH9.json'
 interface FactoryFixture {
   tokenA: Contract
   tokenB: Contract
+  weth: Contract
   config: Contract
   pairFactory: Contract
   pairRouter: Contract
@@ -46,7 +47,7 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
   const pairUtils = await deployContract(wallet, PairUtils, [config.address], overrides)
   const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
-  return { tokenA, tokenB, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
+  return { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
 }
 
 interface PairFixture extends FactoryFixture {
@@ -63,7 +64,7 @@ interface OrderBookFixture extends PairFixture {
 }
 
 export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<OrderBookFixture> {
-  const { tokenA, tokenB, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
+  const { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
 
   const tokenAAmount = expandTo18Decimals(1)
   const tokenBAmount = expandTo6Decimals(2)
@@ -89,5 +90,5 @@ export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[
   const orderNFTAddress = await orderBook.orderNFT();
   const orderNFT = new Contract(orderNFTAddress, JSON.stringify(OrderNFT.abi), provider).connect(wallet)
 
-  return { config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter, token0, token1, pair, baseToken, quoteToken, orderBook, tokenA, tokenB, orderNFT }
+  return { config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter, token0, token1, weth, pair, baseToken, quoteToken, orderBook, tokenA, tokenB, orderNFT }
 }

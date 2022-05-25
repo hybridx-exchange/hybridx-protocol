@@ -24,6 +24,7 @@ describe('HybridxOrderBook', () => {
     let pairFactory: Contract
     let token0: Contract
     let token1: Contract
+    let weth: Contract
     let pair: Contract
     let orderBook: Contract
     let orderBookFactory: Contract
@@ -38,6 +39,7 @@ describe('HybridxOrderBook', () => {
         pairFactory = fixture.pairFactory
         token0 = fixture.token0
         token1 = fixture.token1
+        weth = fixture.weth
         pair = fixture.pair
         orderBook = fixture.orderBook
         orderBookFactory = fixture.orderBookFactory
@@ -97,5 +99,8 @@ describe('HybridxOrderBook', () => {
 
         result = await orderNFT.getUserOrders(wallet.address);
         //console.log(result)
+
+        result = await pairUtils.getBestAmountsIn(expandTo6Decimals(1), [tokenBase.address, weth.address, tokenQuote.address], [3])
+        console.log(result)
     })
 })
