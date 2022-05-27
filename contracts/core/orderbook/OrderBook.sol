@@ -581,12 +581,12 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         while (price != 0) {
             uint amountAmmLeft;
             if (params[4] == LIMIT_BUY) {
-                (amountAmmLeft, extra[1], extra[0], extra[1], extra[0]) =
+                (amountAmmLeft, extra[1], extra[0], extra[3], extra[2]) =
                     OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
                         price, params[6]);
             }
             else {
-                (amountAmmLeft, extra[0], extra[1], extra[0], extra[1]) =
+                (amountAmmLeft, extra[0], extra[1], extra[2], extra[3]) =
                     OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
                         price, params[6]);
             }
@@ -613,10 +613,11 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
             extra[3] = params[4] == LIMIT_BUY ?
                 OrderBookLibrary.getAmountOut(amountInLeft, params[1], params[0]) :
                 OrderBookLibrary.getAmountOut(amountInLeft, params[0], params[1]);
-            (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(extra[3])) :
-                (params[0] + extra[2], params[1].sub(extra[3]));
             amountOutGet += extra[3];
         }
+
+        (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(extra[3])) :
+            (params[0] + extra[2], params[1].sub(extra[3]));
     }
 
     function getAmountInForMovePrice(address tokenOut, uint amountOutOffer) external override view
@@ -633,12 +634,12 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         while (price != 0) {
             uint amountAmmLeft;
             if (params[4] == LIMIT_BUY) {
-                (amountAmmLeft, extra[1], extra[0], extra[1], extra[0]) =
+                (amountAmmLeft, extra[1], extra[0], extra[3], extra[2]) =
                     OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
                         price, params[6]);
             }
             else {
-                (amountAmmLeft, extra[0], extra[1], extra[0], extra[1]) =
+                (amountAmmLeft, extra[0], extra[1], extra[2], extra[3]) =
                     OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
                         price, params[6]);
             }
@@ -666,9 +667,10 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
                 OrderBookLibrary.getAmountIn(amountOutLeft, params[0], params[1]);
             amountInGet += extra[2];
             extra[3] = amountOutLeft;
-            (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(amountOutLeft)) :
-                (params[0] + extra[2], params[1].sub(amountOutLeft));
         }
+
+        (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(amountOutLeft)) :
+            (params[0] + extra[2], params[1].sub(amountOutLeft));
     }
 
     function takeOrderWhenMovePrice(address tokenIn, uint amountIn, address to) external override lock
@@ -704,8 +706,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
         if (amountIn > 0) {
             amountOutLeft += tradeDir == LIMIT_BUY ?
-            OrderBookLibrary.getAmountOut(amountIn, reserves[1], reserves[0]) :
-            OrderBookLibrary.getAmountOut(amountIn, reserves[0], reserves[1]);
+                OrderBookLibrary.getAmountOut(amountIn, reserves[1], reserves[0]) :
+                OrderBookLibrary.getAmountOut(amountIn, reserves[0], reserves[1]);
         }
     }
 }
