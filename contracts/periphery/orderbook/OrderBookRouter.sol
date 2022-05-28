@@ -184,7 +184,7 @@ contract OrderBookRouter is IOrderBookRouter {
             uint reserveBaseNew;
             uint reserveQuoteNew;
             uint baseDecimal = IERC20(tokenA).decimals();
-            (amounts[5], amounts[0], amounts[1], reserveBaseNew, reserveQuoteNew) = OrderBookLibrary
+            (amounts[5], amounts[1], amounts[0], reserveBaseNew, reserveQuoteNew) = OrderBookLibrary
                 .getAmountForMovePrice(LIMIT_BUY, amountOffer, reserveBase, reserveQuote, price, baseDecimal);
             amounts[7] = OrderBookLibrary.getPrice(reserveBaseNew, reserveQuoteNew, baseDecimal);
             (amounts[2], amounts[3], amounts[4], amounts[6]) = (0, 0, 0, 0);

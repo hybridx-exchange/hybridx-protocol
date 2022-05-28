@@ -61,7 +61,7 @@ contract PairUtils is IPairUtils {
         view
         virtual
         override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
+        returns (address[] memory path, uint[] memory amounts, uint[] memory extra)
     {
         address[][] memory groupedPaths = new address[][](lens.length);
         uint k;
@@ -80,7 +80,7 @@ contract PairUtils is IPairUtils {
         view
         virtual
         override
-        returns (address[] memory path, uint[] memory amounts, uint[] memory nextReserves)
+        returns (address[] memory path, uint[] memory amounts, uint[] memory extra)
     {
         address[][] memory groupedPaths = new address[][](lens.length);
         uint k;
@@ -92,5 +92,11 @@ contract PairUtils is IPairUtils {
         }
         require(paths.length == k, "INVALID_PATHS");
         return PairLibrary.getBestAmountsIn(IConfig(config).getPairFactory(), amountOut, groupedPaths);
+    }
+
+    // fetches and sorts the reserves for a pair
+    function getReserves(address tokenA, address tokenB) external view override
+    returns (uint reserveA, uint reserveB) {
+        (reserveA, reserveB,) = PairLibrary.getReserves(IConfig(config).getPairFactory(), tokenA, tokenB);
     }
 }

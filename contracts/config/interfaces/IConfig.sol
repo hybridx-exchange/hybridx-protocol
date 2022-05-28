@@ -17,7 +17,11 @@ interface IConfig {
     function protocolFeeRateUpdate(address orderBook, uint newProtocolFeeRate) external;
     function subsidyFeeRateUpdate(address orderBook, uint newSubsidyFeeRate) external;
     function priceStepUpdate(address orderBook, uint newPriceStep) external;
+    function baseSignificantDigitsUpdate(address orderBook, uint newBaseSignificantDigits) external;
+    function quoteSignificantDigitsUpdate(address orderBook, uint newQuoteSignificantDigits) external;
     function protocolFeeRate(address orderBook) external view returns (uint);
     function subsidyFeeRate(address orderBook) external view returns (uint);
     function priceStep(address orderBook, uint price) external view returns (uint);
+    function baseSignificantDigits(address orderBook) external view returns (uint);
+    function quoteSignificantDigits(address orderBook) external view returns (uint);
 }

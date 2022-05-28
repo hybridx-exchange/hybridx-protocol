@@ -14,6 +14,8 @@ contract Config is Ownable, IConfig {
     uint public defaultSubsidyFeeRate = 50;   // default is 50% of ProtocolFeeRate
     mapping(address => uint) public protocolFeeRateMap;
     mapping(address => uint) public subsidyFeeRateMap;
+    mapping(address => uint) public baseSignificantDigitsMap;
+    mapping(address => uint) public quoteSignificantDigitsMap;
     uint public override priceStepFactor = 1;          // default is 1 / 10000
     mapping(address => uint) public override priceStepMap;
 
@@ -84,6 +86,16 @@ contract Config is Ownable, IConfig {
         priceStepMap[orderBook] = newPriceStep;
     }
 
+    function baseSignificantDigitsUpdate(address orderBook, uint newBaseSignificantDigits) external override onlyOwner {
+        require(newBaseSignificantDigits > 0 && newBaseSignificantDigits <= 18);
+        baseSignificantDigitsMap[orderBook] = newBaseSignificantDigits;
+    }
+
+    function quoteSignificantDigitsUpdate(address orderBook, uint newQuoteSignificantDigits) external override onlyOwner {
+        require(newQuoteSignificantDigits > 0 && newQuoteSignificantDigits <= 18);
+        quoteSignificantDigitsMap[orderBook] = newQuoteSignificantDigits;
+    }
+
     //get protocol fee rate
     function protocolFeeRate(address orderBook) external override view returns (uint) {
         if (protocolFeeRateMap[orderBook] != 0) return protocolFeeRateMap[orderBook];
@@ -100,5 +112,17 @@ contract Config is Ownable, IConfig {
     function priceStep(address orderBook, uint price) external override view returns (uint) {
         if (priceStepMap[orderBook] != 0) return priceStepMap[orderBook];
         return price <= 10000 ? 10000 : (price / 10000) * priceStepFactor;
+    }
+
+    //get base token significant digits
+    function baseSignificantDigits(address orderBook) external override view returns (uint) {
+        if (baseSignificantDigitsMap[orderBook] != 0) return baseSignificantDigitsMap[orderBook];
+        return 6;
+    }
+
+    //get quote token significant digits
+    function quoteSignificantDigits(address orderBook) external override view returns (uint) {
+        if (quoteSignificantDigitsMap[orderBook] != 0) return quoteSignificantDigitsMap[orderBook];
+        return 6;
     }
 }
