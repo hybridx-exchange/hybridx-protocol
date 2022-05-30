@@ -22,7 +22,9 @@ contract Config is Ownable, IConfig {
     address public override WETH;
 
     bytes private orderNFTByteCode;
+    uint private orderNFTByteFlag;
     bytes private orderBookByteCode;
+    uint private orderBookByteFlag;
     address private pairFactory;
     address private orderBookFactory;
     constructor(address _WETH) {
@@ -49,21 +51,37 @@ contract Config is Ownable, IConfig {
     }
 
     function getOrderNFTByteCode() external view override returns (bytes memory bytecode) {
+        require(orderNFTByteFlag != 0, 'Order NFT Bytecode not set complete.');
         bytecode = orderNFTByteCode;
     }
 
     function setOrderNFTByteCode(bytes memory byteCode) external override onlyOwner {
         require(orderNFTByteCode.length == 0, 'Order NFT Bytecode set already');
         orderNFTByteCode = byteCode;
+        orderNFTByteFlag = 1;
+    }
+
+    function appendOrderNFTByteCode(bytes memory byteCode, uint flag) external override onlyOwner {
+        require(orderNFTByteFlag == 0, 'Order NFT Bytecode set complete already');
+        orderNFTByteCode = bytes.concat(orderNFTByteCode, byteCode);
+        orderNFTByteFlag |= flag;
     }
 
     function getOrderBookByteCode() external view override returns (bytes memory bytecode) {
+        require(orderBookByteFlag != 0, 'Order Book Bytecode not set complete.');
         bytecode = orderBookByteCode;
     }
 
     function setOrderBookByteCode(bytes memory byteCode) external override onlyOwner {
         require(orderBookByteCode.length == 0, 'Order Book Bytecode set already');
         orderBookByteCode = byteCode;
+        orderBookByteFlag = 1;
+    }
+
+    function appendOrderBookByteCode(bytes memory byteCode, uint flag) external override onlyOwner {
+        require(orderBookByteFlag == 0, 'Order Book Bytecode set complete already');
+        orderBookByteCode = bytes.concat(orderBookByteCode, byteCode);
+        orderBookByteFlag |= flag;
     }
 
     function priceStepFactorUpdate(uint newPriceStepFactor) external override onlyOwner {
