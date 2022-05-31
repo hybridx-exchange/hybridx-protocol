@@ -267,7 +267,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
     // Return funds that were transferred into the contract by mistake
     function safeRefund(address token, address payable to) external override lock {
-        require(msg.sender == OrderBookLibrary.getOwner(orderBookFactory), "Forbidden");
+        require(msg.sender == OrderBookLibrary.getOwner(orderBookFactory), "OrderBook: Forbidden");
         if (token == address(0)) {
             uint ethBalance = address(this).balance;
             if (ethBalance > 0) to.transfer(ethBalance);
