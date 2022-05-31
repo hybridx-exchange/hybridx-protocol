@@ -71,7 +71,7 @@ contract PairUtils is IPairUtils {
                 groupedPaths[i][j] = paths[k++];
             }
         }
-        require(paths.length == k, "INVALID_PATHS");
+        require(paths.length == k, "PairUtils: INVALID_PATHS");
         return PairLibrary.getBestAmountsOut(IConfig(config).getPairFactory(), amountIn, groupedPaths);
     }
 
@@ -90,7 +90,7 @@ contract PairUtils is IPairUtils {
                 groupedPaths[i][j] = paths[k++];
             }
         }
-        require(paths.length == k, "INVALID_PATHS");
+        require(paths.length == k, "PairUtils: INVALID_PATHS");
         return PairLibrary.getBestAmountsIn(IConfig(config).getPairFactory(), amountOut, groupedPaths);
     }
 
