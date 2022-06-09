@@ -171,7 +171,7 @@ library OrderBookLibrary {
             amountBase = amountQuote == 0 ? 0 : getAmountOut(amountQuote, reserveQuote, reserveBase);
             if (amountBase > amountOut) {
                 amountBase = amountOut;
-                amountQuote = getAmountIn(amountBase, reserveQuote, reserveBase);
+                amountQuote = amountBase == 0 ? 0 : getAmountIn(amountBase, reserveQuote, reserveBase);
             }
             (amountOutLeft, reserveBaseNew, reserveQuoteNew) =
                 (amountOut - amountBase, reserveBase - amountBase, reserveQuote + amountQuote);
@@ -183,7 +183,7 @@ library OrderBookLibrary {
             amountQuote = amountBase == 0 ? 0 : getAmountOut(amountBase, reserveBase, reserveQuote);
             if (amountQuote > amountOut) {
                 amountQuote = amountOut;
-                amountBase = getAmountIn(amountQuote, reserveBase, reserveQuote);
+                amountBase = amountQuote == 0 ? 0 : getAmountIn(amountQuote, reserveBase, reserveQuote);
             }
             (amountOutLeft, reserveBaseNew, reserveQuoteNew) =
                 (amountOut - amountQuote, reserveBase + amountBase, reserveQuote - amountQuote);
