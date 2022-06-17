@@ -97,10 +97,16 @@ describe('HybridxOrderBook', () => {
             formatUnits(result.extra[4], 18),
             formatUnits(result.extra[5], 6))
 
+        result = await pairUtils.getAmountsIn(expandTo18Decimals(1), [tokenQuote.address, tokenBase.address])
+        console.log(result)
+
         result = await orderNFT.getUserOrders(wallet.address);
         //console.log(result)
 
         result = await pairUtils.getBestAmountsIn(expandTo6Decimals(1), [tokenBase.address, weth.address, tokenQuote.address], [3])
+        console.log(result)
+
+        result = await pairUtils.getBestAmountsIn(expandTo18Decimals(1), [tokenQuote.address, weth.address, tokenBase.address], [3])
         console.log(result)
     })
 })

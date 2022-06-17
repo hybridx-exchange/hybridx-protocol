@@ -19,7 +19,7 @@ contract OrderBookRouter is IOrderBookRouter {
     uint internal constant LIMIT_SELL = 2;
 
     modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'HybridRouter: EXPIRED');
+        require(deadline >= block.timestamp, 'OrderBookRouter: EXPIRED');
         _;
     }
 
@@ -48,14 +48,14 @@ contract OrderBookRouter is IOrderBookRouter {
         override
         ensure(deadline)
         returns (uint orderId) {
-        require(baseToken != quoteToken, 'HybridRouter: Invalid_Path');
+        require(baseToken != quoteToken, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, quoteToken);
         if (orderBook == address(0)) {
             orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
         }
 
-        require(quoteToken == IOrderBook(orderBook).quoteToken(), "HybridRouter: MisOrder_Path");
+        require(quoteToken == IOrderBook(orderBook).quoteToken(), "OrderBookRouter: MisOrder_Path");
         TransferHelper.safeTransferFrom(
             quoteToken, msg.sender, orderBook, amountOffer
         );
@@ -78,7 +78,7 @@ contract OrderBookRouter is IOrderBookRouter {
         returns (uint orderId)
     {
         address WETH = IConfig(config).WETH();
-        require(baseToken != WETH, 'HybridRouter: Invalid_Path');
+        require(baseToken != WETH, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, WETH);
         if (orderBook == address(0)) {
@@ -107,14 +107,14 @@ contract OrderBookRouter is IOrderBookRouter {
         ensure(deadline)
         returns (uint orderId)
     {
-        require(baseToken != quoteToken, 'HybridRouter: Invalid_Path');
+        require(baseToken != quoteToken, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, quoteToken);
         if (orderBook == address(0)) {
             orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(baseToken, quoteToken);
         }
 
-        require(quoteToken == IOrderBook(orderBook).quoteToken(), "HybridRouter: MisOrder_Path");
+        require(quoteToken == IOrderBook(orderBook).quoteToken(), "OrderBookRouter: MisOrder_Path");
         TransferHelper.safeTransferFrom(
             baseToken, msg.sender, orderBook, amountOffer
         );
@@ -137,14 +137,14 @@ contract OrderBookRouter is IOrderBookRouter {
         returns (uint orderId)
     {
         address WETH = IConfig(config).WETH();
-        require(WETH != quoteToken, 'HybridRouter: Invalid_Path');
+        require(WETH != quoteToken, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(WETH, quoteToken);
         if (orderBook == address(0)) {
             orderBook = IOrderBookFactory(orderBookFactory).createOrderBook(WETH, quoteToken);
         }
 
-        require(WETH == IOrderBook(orderBook).baseToken(), 'HybridRouter: MisOrder_Path');
+        require(WETH == IOrderBook(orderBook).baseToken(), 'OrderBookRouter: MisOrder_Path');
         IWETH(WETH).deposit{value: msg.value}();
         assert(IWETH(WETH).transfer(orderBook, msg.value));
 
@@ -166,7 +166,7 @@ contract OrderBookRouter is IOrderBookRouter {
     override
     view
     returns (uint[] memory amounts) { //ammAmountIn, ammAmountOut, orderAmountIn, orderAmountOut, fee
-        require(tokenA != tokenB, 'HybridRouter: Invalid_Path');
+        require(tokenA != tokenB, 'OrderBookRouter: Invalid_Path');
         address orderBook = IOrderBookFactory(IConfig(config).getOrderBookFactory()).getOrderBook(tokenA, tokenB);
         if (orderBook != address(0)) {
             (address baseToken, address quoteToken) = IOrderBook(orderBook).baseToken() == tokenA ?
@@ -197,7 +197,7 @@ contract OrderBookRouter is IOrderBookRouter {
     override
     view
     returns (uint[] memory amounts) { //ammAmountIn, ammAmountOut, orderAmountIn, orderAmountOut
-        require(tokenA != tokenB, 'HybridRouter: Invalid_Path');
+        require(tokenA != tokenB, 'OrderBookRouter: Invalid_Path');
         address orderBook = IOrderBookFactory(IConfig(config).getOrderBookFactory()).getOrderBook(tokenA, tokenB);
         if (orderBook != address(0)) {
             (address baseToken, address quoteToken) = IOrderBook(orderBook).baseToken() == tokenA ?
@@ -231,7 +231,7 @@ contract OrderBookRouter is IOrderBookRouter {
     returns
     (uint price, uint[] memory buyPrices, uint[] memory buyAmounts, uint[] memory sellPrices, uint[] memory sellAmounts)
     {
-        require(tokenA != tokenB, 'HybridRouter: Invalid_Path');
+        require(tokenA != tokenB, 'OrderBookRouter: Invalid_Path');
         address orderBook = IOrderBookFactory(IConfig(config).getOrderBookFactory()).getOrderBook(tokenA, tokenB);
         if (orderBook != address(0)) {
             price = IOrderBook(orderBook).getPrice();

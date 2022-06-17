@@ -18,8 +18,8 @@ import './interfaces/IPairFactory.sol';
 contract PairERC20 is IPairERC20 {
     using SafeMath for uint;
 
-    string public override constant name = 'Uniswap V2';
-    string public override constant symbol = 'UNI-V2';
+    string public override constant name = 'HybridX LP Token';
+    string public override constant symbol = 'LPT';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;

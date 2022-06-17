@@ -9,8 +9,10 @@ interface IConfig {
     function setOrderBookFactory(address newOrderBookFactory) external;
     function getOrderNFTByteCode() external view returns (bytes memory bytecode);
     function setOrderNFTByteCode(bytes memory byteCode) external;
+    function appendOrderNFTByteCode(bytes memory byteCode, uint flag) external;
     function getOrderBookByteCode() external view returns (bytes memory bytecode);
     function setOrderBookByteCode(bytes memory byteCode) external;
+    function appendOrderBookByteCode(bytes memory byteCode, uint flag) external;
     function priceStepFactor() external returns (uint);
     function priceStepFactorUpdate(uint newPriceStepFactor) external;
     function priceStepMap(address orderBook) external returns (uint);
