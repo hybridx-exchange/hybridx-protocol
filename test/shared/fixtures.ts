@@ -50,9 +50,9 @@ export async function factoryFixture(provider: Web3Provider, [wallet]: Wallet[])
   await config.setOrderBookFactory(orderBookFactory.address, overrides)
   await config.setOrderBookByteCode(utils.arrayify('0x' + OrderBook.evm.bytecode.object), overrides)
   await config.setOrderNFTByteCode(utils.arrayify('0x' + OrderNFT.evm.bytecode.object), overrides)
-  const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
-  const pairUtils = await deployContract(wallet, PairUtils, [config.address], overrides)
-  const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
+  let pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
+  let pairUtils = await deployContract(wallet, PairUtils, [config.address], overrides)
+  let orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
   const hybridXRouter = await deployContract(wallet, HybridXRouter, [config.address], overrides);
 
   console.log('hybridXRouterAddress', hybridXRouter.address)
@@ -90,8 +90,9 @@ export async function factoryFixture(provider: Web3Provider, [wallet]: Wallet[])
   //console.log(pairUtils.address, functionIds)
   await hybridXRouter.bindFunctions(pairUtils.address, functionIds)
 
-  const orderBookRouterProxy = new Contract(hybridXRouter.address, JSON.stringify(IOrderBookRouter.abi), provider)
-  //console.log(await orderBookRouterProxy.getOrderBook(tokenA.address, tokenB.address, 32))
+  pairRouter = new Contract(hybridXRouter.address, JSON.stringify(IPairRouter.abi), provider).connect(wallet)
+  pairUtils = new Contract(hybridXRouter.address, JSON.stringify(IPairUtils.abi), provider).connect(wallet)
+  orderBookRouter = new Contract(hybridXRouter.address, JSON.stringify(IOrderBookRouter.abi), provider).connect(wallet)
 
   return { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
 }
