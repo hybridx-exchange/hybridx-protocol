@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IPairUtils {
-    function config() external view returns (address);
     function getBestAmountsOut(uint amountIn, address[] calldata paths, uint[] calldata lens) external view returns (
         address[] memory path, uint[] memory amounts, uint[] memory extra);
     function getBestAmountsIn(uint amountOut, address[] calldata paths, uint[] calldata lens) external view returns (

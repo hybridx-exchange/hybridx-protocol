@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IPairRouter {
-    function config() external view returns (address);
-
     function addLiquidity(
         address tokenA,
         address tokenB,

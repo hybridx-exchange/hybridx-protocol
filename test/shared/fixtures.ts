@@ -2,7 +2,7 @@ import { Contract, Wallet, utils } from 'ethers'
 import { Web3Provider } from 'ethers/providers'
 import { deployContract } from 'ethereum-waffle'
 
-import {expandTo18Decimals, expandTo6Decimals} from './utilities'
+import { expandTo18Decimals, expandTo6Decimals, getFunctionSelector } from './utilities'
 
 import ERC20 from '../../build/ERC20.json'
 import ERC20Decimal6 from '../../build/ERC20Decimal6.json'
@@ -16,6 +16,12 @@ import OrderBookRouter from '../../build/OrderBookRouter.json'
 import OrderBook from '../../build/OrderBook.json'
 import OrderNFT from '../../build/OrderNFT.json'
 import WETH from '../../build/WETH9.json'
+import HybridXRouter from '../../build/HybridXRouter.json'
+import IOrderBookRouter from '../../build/IOrderBookRouter.json'
+import IPairRouter from '../../build/IPairRouter.json'
+import IPairUtils from '../../build/IPairUtils.json'
+import {FunctionFragment} from "ethers/utils";
+import { expect } from "chai";
 
 interface FactoryFixture {
   tokenA: Contract
@@ -33,7 +39,7 @@ const overrides = {
   gasLimit: 15999999
 }
 
-export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
+export async function factoryFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
   const tokenA = await deployContract(wallet, ERC20, [expandTo18Decimals(30000)], overrides)
   const tokenB = await deployContract(wallet, ERC20Decimal6, [expandTo6Decimals(30000)], overrides)
   const weth = await deployContract(wallet, WETH, [], overrides)
@@ -47,6 +53,46 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const pairRouter = await deployContract(wallet, PairRouter, [config.address], overrides)
   const pairUtils = await deployContract(wallet, PairUtils, [config.address], overrides)
   const orderBookRouter = await deployContract(wallet, OrderBookRouter, [config.address], overrides)
+  const hybridXRouter = await deployContract(wallet, HybridXRouter, [config.address], overrides);
+
+  console.log('hybridXRouterAddress', hybridXRouter.address)
+
+  const orderBookRouterInterface = new utils.Interface(IOrderBookRouter.abi)
+  let functionIds: string[] = []
+  orderBookRouterInterface.abi.forEach((fragment) => {
+    if (fragment.type === 'function') {
+      functionIds.push(getFunctionSelector(fragment as FunctionFragment))
+    }
+  })
+
+  //console.log(orderBookRouter.address, functionIds)
+  await hybridXRouter.bindFunctions(orderBookRouter.address, functionIds)
+
+  const pairRouterInterface = new utils.Interface(IPairRouter.abi)
+  functionIds = []
+  pairRouterInterface.abi.forEach((fragment) => {
+    if (fragment.type === 'function') {
+      functionIds.push(getFunctionSelector(fragment as FunctionFragment))
+    }
+  })
+
+  //console.log(pairRouter.address, functionIds)
+  await hybridXRouter.bindFunctions(pairRouter.address, functionIds)
+
+  const pairUtilsInterface = new utils.Interface(IPairUtils.abi)
+  functionIds = []
+  pairUtilsInterface.abi.forEach((fragment) => {
+    if (fragment.type === 'function') {
+      functionIds.push(getFunctionSelector(fragment as FunctionFragment))
+    }
+  })
+
+  //console.log(pairUtils.address, functionIds)
+  await hybridXRouter.bindFunctions(pairUtils.address, functionIds)
+
+  const orderBookRouterProxy = new Contract(hybridXRouter.address, JSON.stringify(IOrderBookRouter.abi), provider)
+  //console.log(await orderBookRouterProxy.getOrderBook(tokenA.address, tokenB.address, 32))
+
   return { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
 }
 

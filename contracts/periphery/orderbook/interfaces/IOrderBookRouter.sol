@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IOrderBookRouter {
-    function config() external view returns (address);
 
     //buy with token
     function buyWithToken(

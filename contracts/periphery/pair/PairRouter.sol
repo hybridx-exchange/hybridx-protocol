@@ -11,8 +11,7 @@ import '../../deps/libraries/TransferHelper.sol';
 
 contract PairRouter is IPairRouter {
     using SafeMath for uint;
-
-    address public override config;
+    address public config;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'PairRouter: EXPIRED');

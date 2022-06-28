@@ -86,6 +86,16 @@ library Strings {
         return string(buffer);
     }
 
+    function toHexString(bytes4 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0x00000000";
+        }
+
+        uint256 temp = uint32(value);
+        uint256 length = 4;
+        return toHexString(temp, length);
+    }
+
     function memcpy(uint dest, uint src, uint len) private pure {
         // Copy word-length chunks while possible
         for(; len >= 32; len -= 32) {

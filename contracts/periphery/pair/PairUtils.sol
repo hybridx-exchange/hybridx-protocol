@@ -6,7 +6,7 @@ import '../../core/pair/interfaces/IPairFactory.sol';
 import '../../core/pair/libraries/PairLibrary.sol';
 
 contract PairUtils is IPairUtils {
-    address public override config;
+    address public config;
     constructor(address _config) {
         config = _config;
     }

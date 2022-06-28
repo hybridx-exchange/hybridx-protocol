@@ -13,7 +13,7 @@ import "./interfaces/IOrderBookRouter.sol";
 @ens                            cherideal.eth
 **************************************************************************************************************/
 contract OrderBookRouter is IOrderBookRouter {
-    address public override config;
+    address public config;
 
     uint internal constant LIMIT_BUY = 1;
     uint internal constant LIMIT_SELL = 2;

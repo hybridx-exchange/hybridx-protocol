@@ -1,7 +1,8 @@
-import { Contract } from 'ethers'
+import {Contract, utils} from 'ethers'
 import { Web3Provider } from 'ethers/providers'
 import {
     BigNumber,
+    FunctionFragment,
     bigNumberify,
     getAddress,
     keccak256,
@@ -36,6 +37,26 @@ function getDomainSeparator(name: string, tokenAddress: string) {
       ]
     )
   )
+}
+
+export function getFunctionSelector(fragment: FunctionFragment): string {
+    let inputs = fragment.inputs.map(i => {
+        return i.type
+    })
+
+    let fragmentStr = fragment.name + '('
+    inputs.forEach((e, i) => {
+        if (i == 0) {
+            fragmentStr += e;
+        }
+        else {
+            fragmentStr += ',' + e;
+        }
+    })
+
+    fragmentStr += ')'
+    //console.log(fragmentStr)
+    return utils.keccak256(utils.toUtf8Bytes(fragmentStr)).substring(0, 10)
 }
 
 export function getCreate2Address(
