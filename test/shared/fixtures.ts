@@ -90,9 +90,9 @@ export async function factoryFixture(provider: Web3Provider, [wallet]: Wallet[])
   //console.log(pairUtils.address, functionIds)
   await hybridXRouter.bindFunctions(pairUtils.address, functionIds)
 
-  pairRouter = new Contract(hybridXRouter.address, JSON.stringify(IPairRouter.abi), provider).connect(wallet)
-  pairUtils = new Contract(hybridXRouter.address, JSON.stringify(IPairUtils.abi), provider).connect(wallet)
-  orderBookRouter = new Contract(hybridXRouter.address, JSON.stringify(IOrderBookRouter.abi), provider).connect(wallet)
+  //pairRouter = new Contract(hybridXRouter.address, JSON.stringify(IPairRouter.abi), provider).connect(wallet)
+  //pairUtils = new Contract(hybridXRouter.address, JSON.stringify(IPairUtils.abi), provider).connect(wallet)
+  //orderBookRouter = new Contract(hybridXRouter.address, JSON.stringify(IOrderBookRouter.abi), provider).connect(wallet)
 
   return { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter }
 }
@@ -113,8 +113,8 @@ interface OrderBookFixture extends PairFixture {
 export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<OrderBookFixture> {
   const { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
 
-  const tokenAAmount = expandTo18Decimals(1)
-  const tokenBAmount = expandTo6Decimals(2)
+  const tokenAAmount = expandTo18Decimals(10)
+  const tokenBAmount = expandTo6Decimals(20)
   const zero = expandTo18Decimals(0)
   await tokenA.approve(pairRouter.address, tokenAAmount)
   await tokenB.approve(pairRouter.address, tokenBAmount)

@@ -62,9 +62,42 @@ describe('HybridxOrderBook', () => {
             formatUnits(result.extra[3], 6),
             formatUnits(result.extra[4], 18),
             formatUnits(result.extra[5], 6))
+
+        result = await pairUtils.getAmountsIn(result.amounts[1], [tokenBase.address, tokenQuote.address])
+        console.log(formatUnits(result.amounts[0], 18),
+            formatUnits(result.amounts[1], 6),
+            formatUnits(result.extra[0], 18),
+            formatUnits(result.extra[1], 6),
+            formatUnits(result.extra[2], 18),
+            formatUnits(result.extra[3], 6),
+            formatUnits(result.extra[4], 18),
+            formatUnits(result.extra[5], 6))
+
+        await tokenQuote.approve(pairRouter.address, expandTo6Decimals(100000))
+        await tokenBase.approve(pairRouter.address, expandTo18Decimals(100000))
+        let deadline;
+        let tx
+        let ret
+        /*deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(1), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapTokensForExactTokens(expandTo6Decimals(1), expandTo18Decimals(1000), [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)*/
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo6Decimals(1), 0, [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log('swapExactTokensForTokens', ret.transactionHash)
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(1), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log('swapTokensForExactTokens', ret.transactionHash)
+
         await tokenQuote.approve(orderBookRouter.address, expandTo6Decimals(100000))
         await tokenBase.approve(orderBookRouter.address, expandTo18Decimals(100000))
-        let deadline = Math.floor(Date.now() / 1000) + 200;
+        deadline = Math.floor(Date.now() / 1000) + 200;
         await orderBookRouter.buyWithToken(expandTo6Decimals(1), bigNumberify("2000000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)
         deadline = Math.floor(Date.now() / 1000) + 200;
         await orderBookRouter.buyWithToken(expandTo6Decimals(1), bigNumberify("1900000"), tokenBase.address, tokenQuote.address, wallet.address, deadline)

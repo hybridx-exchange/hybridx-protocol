@@ -705,7 +705,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         _updateBalance();
 
         if (amountIn > 0) {
-            amountOutLeft += tradeDir == LIMIT_BUY ?
+            amountOutLeft = tradeDir == LIMIT_BUY ?
                 OrderBookLibrary.getAmountOut(amountIn, reserves[1], reserves[0]) :
                 OrderBookLibrary.getAmountOut(amountIn, reserves[0], reserves[1]);
         }

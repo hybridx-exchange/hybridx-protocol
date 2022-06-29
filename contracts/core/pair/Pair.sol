@@ -335,11 +335,14 @@ contract Pair is IPair, PairERC20 {
             require(amount0In > 0 || amount1In > 0, 'Pair: INSUFFICIENT_INPUT_AMOUNT');
             if (amount0In != 0) {
                 amount1OutRet = doTakeOrder(orderBook, to, token0, amount0In);
-                require(amount1OutRet <= amount1Out, 'Pair: UNACCEPTABLE_OUTPUT1_AMOUNT');
+                //require(amount1OutRet <= amount1Out, 'Pair: UNACCEPTABLE_OUTPUT1_AMOUNT');
+                //require(amount1OutRet <= amount1Out, 'Pair: DEBUG');
+                //amount1OutRet = amount1OutRet <= amount1Out ? amount1OutRet : amount1Out;
             }
             else {
                 amount0OutRet = doTakeOrder(orderBook, to, token1, amount1In);
-                require(amount0OutRet <= amount0Out, 'Pair: UNACCEPTABLE_OUTPUT0_AMOUNT');
+                //require(amount0OutRet <= amount0Out, 'Pair: UNACCEPTABLE_OUTPUT0_AMOUNT');
+                //amount0OutRet = amount0OutRet <= amount0Out ? amount0OutRet : amount0Out;
             }
         }
     }

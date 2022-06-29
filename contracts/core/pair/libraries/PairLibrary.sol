@@ -110,8 +110,7 @@ library PairLibrary {
             if (orderBook != address(0)) {
                 uint[] memory extraTmp;
                 (amounts[i + 1], extraTmp) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
-                (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i] ?
-                    (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[0]);
+                (extra[index], extra[index + 1]) = (extraTmp[0], extraTmp[1]);
                 (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
@@ -162,6 +161,7 @@ library PairLibrary {
     }
 
     // performs chained getAmountIn calculations on any number of pairs
+    // extra[nextReserveIn, nextReserveOut, ammIn, ammOut, orderIn, orderOutWithSubsidyFee]
     function getAmountsInWithExtra(address factory, uint amountOut, address[] memory path) internal view
     returns (uint[] memory amounts, uint[] memory extra) {
         require(path.length >= 2, 'PL: INVALID_PATH');
@@ -175,8 +175,7 @@ library PairLibrary {
             if (orderBook != address(0)) {
                 uint[] memory extraTmp;
                 (amounts[i - 1], extraTmp) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
-                (extra[index], extra[index + 1]) = IOrderBook(orderBook).baseToken() == path[i - 1] ?
-                    (extraTmp[0], extraTmp[1]) : (extraTmp[1], extraTmp[2]);
+                (extra[index], extra[index + 1]) = (extraTmp[0], extraTmp[1]);
                 (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
             }
