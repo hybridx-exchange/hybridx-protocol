@@ -113,8 +113,8 @@ interface OrderBookFixture extends PairFixture {
 export async function orderBookFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<OrderBookFixture> {
   const { tokenA, tokenB, weth, config, pairFactory, pairRouter, pairUtils, orderBookFactory, orderBookRouter } = await factoryFixture(provider, [wallet])
 
-  const tokenAAmount = expandTo18Decimals(10)
-  const tokenBAmount = expandTo6Decimals(20)
+  const tokenAAmount = expandTo18Decimals(11)
+  const tokenBAmount = 18186779
   const zero = expandTo18Decimals(0)
   await tokenA.approve(pairRouter.address, tokenAAmount)
   await tokenB.approve(pairRouter.address, tokenBAmount)

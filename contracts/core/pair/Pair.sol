@@ -7,7 +7,6 @@ import "../../deps/libraries/Math.sol";
 import "../../deps/libraries/SafeMath.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
-import '../../deps/utils/Strings.sol';
 import './libraries/PairLibrary.sol';
 import '../orderbook/interfaces/IOrderBook.sol';
 import '../orderbook/interfaces/IOrderBookFactory.sol';
@@ -358,6 +357,7 @@ contract Pair is IPair, PairERC20 {
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         if (orderBookFactory != address(0)) {
             (uint _amount0Out, uint _amount1Out) = takeOrder(amount0Out, amount1Out, orderBookFactory, to);
+            //require(_amount0Out != 0 || _amount1Out !=0, 'test 0');
             if (_amount0Out > 0 || _amount1Out > 0) {
                 movePrice(_amount0Out, _amount1Out, to, data);
             }
