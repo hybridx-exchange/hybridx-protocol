@@ -7,6 +7,7 @@ import "../../deps/libraries/Math.sol";
 import "../../deps/libraries/SafeMath.sol";
 import "../../deps/libraries/UQ112x112.sol";
 import '../../deps/libraries/TransferHelper.sol';
+import '../../deps/utils/Strings.sol';
 import './libraries/PairLibrary.sol';
 import '../orderbook/interfaces/IOrderBook.sol';
 import '../orderbook/interfaces/IOrderBookFactory.sol';
@@ -332,17 +333,20 @@ contract Pair is IPair, PairERC20 {
             uint amount0In = balance0 > _reserve0 ? balance0 - _reserve0 : 0;
             uint amount1In = balance1 > _reserve1 ? balance1 - _reserve1 : 0;
 
-            require(amount0In > 0 || amount1In > 0, 'Pair: INSUFFICIENT_INPUT_AMOUNT');
             if (amount0In != 0) {
                 amount1OutRet = doTakeOrder(orderBook, to, token0, amount0In);
                 //require(amount1OutRet <= amount1Out, 'Pair: UNACCEPTABLE_OUTPUT1_AMOUNT');
-                //require(amount1OutRet <= amount1Out, 'Pair: DEBUG');
-                //amount1OutRet = amount1OutRet <= amount1Out ? amount1OutRet : amount1Out;
+                //require(false, 'Pair: DEBUG1');
+                amount1OutRet = amount1OutRet <= amount1Out ? amount1OutRet : amount1Out;
             }
-            else {
+            else if (amount1In != 0) {
                 amount0OutRet = doTakeOrder(orderBook, to, token1, amount1In);
                 //require(amount0OutRet <= amount0Out, 'Pair: UNACCEPTABLE_OUTPUT0_AMOUNT');
-                //amount0OutRet = amount0OutRet <= amount0Out ? amount0OutRet : amount0Out;
+                //require(false, 'Pair: DEBUG2');
+                amount0OutRet = amount0OutRet <= amount0Out ? amount0OutRet : amount0Out;
+            }
+            else {
+                require(false, 'Pair: INSUFFICIENT_INPUT_AMOUNT');
             }
         }
     }
@@ -360,6 +364,7 @@ contract Pair is IPair, PairERC20 {
         }
         else {
             movePrice(amount0Out, amount1Out, to, data);
+            //require(false, 'test');
         }
     }
 

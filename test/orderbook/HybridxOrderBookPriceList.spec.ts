@@ -78,20 +78,20 @@ describe('HybridxOrderBook', () => {
         let deadline;
         let tx
         let ret
-        /*deadline = Math.floor(Date.now() / 1000) + 200;
+        deadline = Math.floor(Date.now() / 1000) + 200;
         tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(1), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
         ret = await tx.wait()
         console.log(ret.transactionHash)
         deadline = Math.floor(Date.now() / 1000) + 200;
-        tx = await pairRouter.swapTokensForExactTokens(expandTo6Decimals(1), expandTo18Decimals(1000), [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        tx = await pairRouter.swapTokensForExactTokens(expandTo6Decimals(2), expandTo18Decimals(1000), [tokenBase.address, tokenQuote.address], wallet.address, deadline)
         ret = await tx.wait()
-        console.log(ret.transactionHash)*/
+        console.log(ret.transactionHash)
         deadline = Math.floor(Date.now() / 1000) + 200;
-        tx = await pairRouter.swapExactTokensForTokens(expandTo6Decimals(1), 0, [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(3), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
         ret = await tx.wait()
-        console.log('swapExactTokensForTokens', ret.transactionHash)
+        console.log('swapTokensForExactTokens', ret.transactionHash)
         deadline = Math.floor(Date.now() / 1000) + 200;
-        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(1), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(4), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
         ret = await tx.wait()
         console.log('swapTokensForExactTokens', ret.transactionHash)
 
