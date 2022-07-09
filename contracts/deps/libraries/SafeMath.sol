@@ -5,18 +5,26 @@ pragma solidity ^0.8.0;
 
 library SafeMath {
     function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x, 'ds-math-add-overflow');
+        unchecked {
+            z = x + y;
+            require(z >= x, 'ds-math-add-overflow');
+        }
     }
 
     function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x, 'ds-math-sub-underflow');
+        require(x >= y, 'ds-math-sub-underflow');
+        z = x - y;
     }
 
     function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
+        unchecked {
+            z = x * y;
+            require(y == 0 || z / y == x, 'ds-math-mul-overflow');
+        }
     }
 
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b != 0, 'ds-math-div-overflow');
         return a / b;
     }
 }

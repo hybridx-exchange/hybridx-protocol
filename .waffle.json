@@ -15,10 +15,10 @@
         "": ["ast"]
       }
     },
-    "evmVersion": "london",
+    "evmVersion": "berlin",
     "optimizer": {
       "enabled": true,
-      "runs": 5
+      "runs": 20
     }
   }
 }

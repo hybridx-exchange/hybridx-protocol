@@ -14,7 +14,7 @@ const overrides = {
 
 describe('HybridxOrderBook', () => {
     const provider = new MockProvider({
-        hardfork: 'istanbul',
+        hardfork: 'muirGlacier',
         mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
         gasLimit: 19999999
     })
@@ -78,10 +78,66 @@ describe('HybridxOrderBook', () => {
         let deadline;
         let tx
         let ret
-        //deadline = Math.floor(Date.now() / 1000) + 200;
-        //tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(1), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
-        //ret = await tx.wait()
-        //console.log(ret.transactionHash)
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(1), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(2), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(3), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapTokensForExactTokens(expandTo6Decimals(2), expandTo18Decimals(1000), [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(3), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log('swapTokensForExactTokens', ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapTokensForExactTokens(expandTo18Decimals(4), expandTo6Decimals(1000), [tokenQuote.address, tokenBase.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log('swapTokensForExactTokens', ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(1), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(2), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
+        result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
+        console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
+            formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))
+        deadline = Math.floor(Date.now() / 1000) + 200;
+        tx = await pairRouter.swapExactTokensForTokens(expandTo18Decimals(3), 0, [tokenBase.address, tokenQuote.address], wallet.address, deadline)
+        ret = await tx.wait()
+        console.log(ret.transactionHash)
         result = await pairUtils.getReserves(tokenBase.address, tokenQuote.address)
         console.log(formatUnits(result[0], 18), formatUnits(result[1], 6),
             formatUnits(await tokenBase.balanceOf(pair.address), 18), formatUnits(await tokenQuote.balanceOf(pair.address), 6))

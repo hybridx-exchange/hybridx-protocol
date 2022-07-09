@@ -156,16 +156,20 @@ contract Pair is IPair, PairERC20 {
     // update reserves and, on the first call per block, price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
         require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, 'Pair: OVERFLOW');
-        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
-            // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
-            price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+        unchecked {//可能目前的evm测试环境虚拟机与solidity不兼容
+            uint32 blockTimestamp = uint32(block.timestamp % 2**32);
+            //uint32 timeElapsed = uint32((uint(blockTimestamp).add(2**32).sub(uint(blockTimestampLast))) % 2**32); // overflow is desired
+            require(blockTimestamp >= blockTimestampLast, 'Pair: TIME OVERFLOW');
+            uint32 timeElapsed = blockTimestamp - blockTimestampLast;
+            if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
+                // * never overflows, and + overflow is desired
+                price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
+                price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+            }
+            blockTimestampLast = blockTimestamp;
         }
         reserve0 = uint112(balance0);
         reserve1 = uint112(balance1);
-        blockTimestampLast = blockTimestamp;
         emit Sync(reserve0, reserve1);
     }
 
