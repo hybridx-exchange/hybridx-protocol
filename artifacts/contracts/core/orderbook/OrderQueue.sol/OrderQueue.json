@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "OrderQueue",
+  "sourceName": "contracts/core/orderbook/OrderQueue.sol",
+  "abi": [],
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea26469706673582212209abf96e4d70ee7440c3e049c6bff347f39108cff3f77a8cca386cf5de9d2af1f64736f6c63430008050033",
+  "deployedBytecode": "0x6080604052600080fdfea26469706673582212209abf96e4d70ee7440c3e049c6bff347f39108cff3f77a8cca386cf5de9d2af1f64736f6c63430008050033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import "../config/interfaces/IConfig.sol";
+import "../../config/interfaces/IConfig.sol";
 import "../pair/interfaces/IPairFactory.sol";
 import "./interfaces/IOrder.sol";
+import "./interfaces/IOrderBookQuery.sol";
 import "./interfaces/IOrderBook.sol";
 import "./interfaces/IOrderBookFactory.sol";
-import "../deps/access/Ownable.sol";
+import "../../deps/access/Ownable.sol";
 /**************************************************************************************************************
 @title                          factory for hybrid order book
 @author                         https://twitter.com/cherideal
@@ -15,12 +16,15 @@ import "../deps/access/Ownable.sol";
 contract OrderBookFactory is IOrderBookFactory {
     mapping(address => mapping(address => address)) public override getOrderNFT;
     mapping(address => mapping(address => address)) public override getOrderBook;
+    mapping(address => mapping(address => address)) public override getOrderBookQuery;
     address[] public override allOrderNFTs;
     address[] public override allOrderBooks;
+    address[] public override allOrderBookQueries;
     address public override config;
 
     event OrderBookCreated(address, address, address, address);
     event OrderNFTCreated(address, address, address, address);
+    event OrderUtilCreated(address, address, address, address);
 
     constructor(address _config) {
         config = _config;
@@ -32,6 +36,10 @@ contract OrderBookFactory is IOrderBookFactory {
 
     function allOrderNFTLength() external override view returns (uint) {
         return allOrderNFTs.length;
+    }
+
+    function allOrderBookQueryLength() external override view returns (uint) {
+        return allOrderBookQueries.length;
     }
 
     //create order book
@@ -54,14 +62,16 @@ contract OrderBookFactory is IOrderBookFactory {
         assembly {
             orderBook := create2(0, add(orderBookByteCode, 32), mload(orderBookByteCode), salt)
         }
+        require(orderBook != address(0), 'OrderBookFactory: CREATE_ORDER_BOOK_FAILED');
 
         salt = keccak256(abi.encodePacked(orderBook, token0, token1));
         address orderNFT;
         assembly {
             orderNFT := create2(0, add(orderNFTByteCode, 32), mload(orderNFTByteCode), salt)
         }
+        require(orderNFT != address(0), 'OrderBookFactory: CREATE_ORDER_NFT_FAILED');
 
-        IOrder(orderNFT).initialize(Ownable(config).owner(), orderBook);
+        IOrder(orderNFT).initialize(allOrderNFTs.length, Ownable(config).owner(), orderBook);
         (getOrderNFT[token0][token1], getOrderNFT[token1][token0]) = (orderNFT, orderNFT);
         allOrderNFTs.push(orderNFT);
         emit OrderNFTCreated(orderBook, baseToken, quoteToken, orderNFT);

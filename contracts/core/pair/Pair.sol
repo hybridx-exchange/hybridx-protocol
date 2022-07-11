@@ -17,17 +17,16 @@ import './interfaces/IPairFactory.sol';
 
 contract PairERC20 is IPairERC20 {
     using SafeMath for uint;
-
-    string public override constant name = 'HybridX LP Token';
-    string public override constant symbol = 'LPT';
-    uint8 public override constant decimals = 18;
+    string public constant override name = 'HybridX LP Token';
+    string public constant override symbol = 'LPT';
+    uint8 public constant override decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;
     mapping(address => mapping(address => uint)) public override allowance;
 
     bytes32 public override DOMAIN_SEPARATOR;
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public override constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant override PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint) public override nonces;
 
     constructor() {
@@ -106,7 +105,7 @@ contract Pair is IPair, PairERC20 {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
 
-    uint public override constant MINIMUM_LIQUIDITY = 10**3;
+    uint public constant override MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
     address public override factory;
@@ -289,8 +288,8 @@ contract Pair is IPair, PairERC20 {
     }
 
     receive() external payable {
-        address WETH = IConfig(config).WETH();
-        assert(WETH == msg.sender);
+        address wETH = IConfig(config).wETH();
+        assert(wETH == msg.sender);
     }
 
     function payOrder(
@@ -298,10 +297,10 @@ contract Pair is IPair, PairERC20 {
         address[] memory accounts,
         uint[] memory amounts)
     internal {
-        address WETH = IConfig(config).WETH();
+        address wETH = IConfig(config).wETH();
         for(uint i=0; i<accounts.length; i++) {
-            if (WETH == token) {
-                IWETH(WETH).withdraw(amounts[i]);
+            if (wETH == token) {
+                IWETH(wETH).withdraw(amounts[i]);
                 TransferHelper.safeTransferETH(accounts[i], amounts[i]);
             }
             else {

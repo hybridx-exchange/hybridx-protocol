@@ -8,7 +8,7 @@ interface IOrder {
         uint256 _remain;
         uint8 _type;
     }
-    function initialize(address _admin, address _orderbook) external;
+    function initialize(uint _id, address _admin, address _orderBook) external;
     function add(uint256 tokenId, uint256 amount) external;
     function mint(OrderDetail memory orderDetail, address to) external returns (uint256 tokenId);
     function sub(uint256 tokenId, uint256 amount) external;

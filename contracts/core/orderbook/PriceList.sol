@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-contract PriceList {
-    uint internal constant LIMIT_BUY = 1;
-    uint internal constant LIMIT_SELL = 2;
+import { LIMIT_BUY, LIMIT_SELL } from "../../deps/libraries/Const.sol";
 
+contract PriceList {
     mapping(uint => mapping(uint => uint)) private limitOrderPriceListMap;
     mapping(uint => uint) private limitOrderPriceArrayLength;
 

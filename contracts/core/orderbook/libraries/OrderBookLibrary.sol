@@ -5,19 +5,22 @@ import "../interfaces/IOrderBook.sol";
 import "../interfaces/IOrderBookFactory.sol";
 import "../../pair/interfaces/IPairFactory.sol";
 import "../../pair/interfaces/IPair.sol";
-import "../../config/interfaces/IConfig.sol";
+import "../../../config/interfaces/IConfig.sol";
 import "../../../deps/access/Ownable.sol";
 import "../../../deps/libraries/Math.sol";
 import "../../../deps/libraries/SafeMath.sol";
+import { LIMIT_BUY, LIMIT_SELL } from "../../../deps/libraries/Const.sol";
 
 library OrderBookLibrary {
     using SafeMath for uint;
 
-    uint internal constant LIMIT_BUY = 1;
-    uint internal constant LIMIT_SELL = 2;
-
     function getOppositeDirection(uint direction) internal pure returns (uint opposite) {
         opposite = direction == LIMIT_BUY ? LIMIT_SELL : direction == LIMIT_SELL ? LIMIT_BUY : 0;
+    }
+
+    function getDirection(address quoteToken, address tokenIn) internal pure returns (uint tradeDir, uint orderDir) {
+        tradeDir = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
+        orderDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
     }
 
     function getOwner(address factory) internal view returns (address owner) {
@@ -285,7 +288,7 @@ library OrderBookLibrary {
     returns (uint[] memory amounts) {
         //get sell limit orders within a price range
         (uint[] memory priceArray, uint[] memory amountArray) =
-            IOrderBook(orderBook).rangeBook(OrderBookLibrary.LIMIT_SELL, price);
+            IOrderBook(orderBook).rangeBook(LIMIT_SELL, price);
         uint[] memory params = new uint[](5);
         (params[0], params[1], params[2], params[3], params[4]) = (
             IOrderBook(orderBook).baseDecimal(),
@@ -305,7 +308,7 @@ library OrderBookLibrary {
             //First calculate the amount in consumed from LP price to order price
             (amountAmmLeft, amountBaseUsed, amountQuoteUsed, params[3], params[4]) =
             OrderBookLibrary.getAmountForMovePrice(
-                OrderBookLibrary.LIMIT_BUY, amounts[5], reserveBase, reserveQuote, priceArray[i], params[0]);
+                LIMIT_BUY, amounts[5], reserveBase, reserveQuote, priceArray[i], params[0]);
 
             //Calculate the amount of quote that will actually be consumed in amm
             amounts[0] = amountQuoteUsed;
@@ -319,7 +322,7 @@ library OrderBookLibrary {
             //Calculate the amount of quote required to consume a pending order at a price
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) =
             OrderBookLibrary.getAmountOutForTakePrice(
-                OrderBookLibrary.LIMIT_BUY, amountAmmLeft, priceArray[i],
+                LIMIT_BUY, amountAmmLeft, priceArray[i],
                 params[0], params[1], params[2], amountArray[i]);
             amounts[2] += amountInForTake;
             amounts[3] += amountOutWithFee.sub(communityFee);
@@ -336,7 +339,7 @@ library OrderBookLibrary {
             uint amountQuoteUsed;
             (amounts[5], amountBaseUsed, amountQuoteUsed, params[3], params[4]) =
             OrderBookLibrary.getAmountForMovePrice(
-                OrderBookLibrary.LIMIT_BUY, amounts[5], reserveBase, reserveQuote, price, params[0]);
+                LIMIT_BUY, amounts[5], reserveBase, reserveQuote, price, params[0]);
             amounts[0] = amountQuoteUsed;
             amounts[1] = amountBaseUsed;
         }
@@ -375,7 +378,7 @@ library OrderBookLibrary {
     returns (uint[] memory amounts) {
         //get buy limit orders within a price range
         (uint[] memory priceArray, uint[] memory amountArray) =
-            IOrderBook(orderBook).rangeBook(OrderBookLibrary.LIMIT_BUY, price);
+            IOrderBook(orderBook).rangeBook(LIMIT_BUY, price);
         uint[] memory params = new uint[](5);
         (params[0], params[1], params[2], params[3], params[4]) = (
             IOrderBook(orderBook).baseDecimal(),
@@ -394,7 +397,7 @@ library OrderBookLibrary {
             //First calculate the amount in consumed from LP price to order price
             (amountAmmLeft, amountBaseUsed, amountQuoteUsed, params[3], params[4]) =
             OrderBookLibrary.getAmountForMovePrice(
-                OrderBookLibrary.LIMIT_SELL, amounts[5], reserveBase, reserveQuote, priceArray[i], params[0]);
+                LIMIT_SELL, amounts[5], reserveBase, reserveQuote, priceArray[i], params[0]);
             amounts[0] = amountBaseUsed;
             amounts[1] = amountQuoteUsed;
             if (amountAmmLeft == 0) {
@@ -405,7 +408,7 @@ library OrderBookLibrary {
             //Calculate the amount of base required to consume a pending order at a price
             (uint amountInForTake, uint amountOutWithFee, uint communityFee) =
             OrderBookLibrary.getAmountOutForTakePrice(
-                OrderBookLibrary.LIMIT_SELL, amountAmmLeft, priceArray[i],
+                LIMIT_SELL, amountAmmLeft, priceArray[i],
                 params[0], params[1], params[2], amountArray[i]);
             amounts[2] += amountInForTake;
             amounts[3] += amountOutWithFee.sub(communityFee);
@@ -422,7 +425,7 @@ library OrderBookLibrary {
             uint amountQuoteUsed;
             (amounts[5], amountBaseUsed, amountQuoteUsed, params[3], params[4]) =
             OrderBookLibrary.getAmountForMovePrice(
-                OrderBookLibrary.LIMIT_SELL, amounts[5], reserveBase, reserveQuote, price, params[0]);
+                LIMIT_SELL, amounts[5], reserveBase, reserveQuote, price, params[0]);
             amounts[0] = amountBaseUsed;
             amounts[1] = amountQuoteUsed;
         }

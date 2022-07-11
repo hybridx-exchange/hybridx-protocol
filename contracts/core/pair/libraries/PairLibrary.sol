@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../../deps/libraries/SafeMath.sol";
 import '../../../config/interfaces/IConfig.sol';
-import '../../orderbook/interfaces/IOrderBook.sol';
+import '../../orderbook/interfaces/IOrderBookQuery.sol';
 import '../../orderbook/interfaces/IOrderBookFactory.sol';
 import "../interfaces/IPair.sol";
 import "../interfaces/IPairFactory.sol";
@@ -73,10 +73,12 @@ library PairLibrary {
         amounts = new uint[](path.length);
         amounts[0] = amountIn;
         address config = IPairFactory(factory).config();
+        address query = IConfig(config).getOrderBookQuery();
         for (uint i; i < path.length - 1; i++) {
             address orderBook = getOrderBook(config, path[i], path[i + 1]);
             if (orderBook != address(0)) {
-                (amounts[i + 1],) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
+                require(query != address(0), 'PL: ORDER_BOOK_QUERY_NOT_SET');
+                (amounts[i + 1],) = IOrderBookQuery(query).getAmountOutForMovePrice(orderBook, path[i], amounts[i]);
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i], path[i + 1]);
@@ -86,10 +88,11 @@ library PairLibrary {
     }
 
     // performs chained getAmountOut calculations on any number of pairs
-    function getSpecificAmountOut(address orderBook, address tokenIn, uint amountIn, uint reserveIn, uint reserveOut)
+    function getSpecificAmountOut(address query, address orderBook, address tokenIn, uint amountIn, uint reserveIn, uint reserveOut)
     internal view returns (uint amountOut) {
         if (orderBook != address(0)) {
-            (amountOut,) = IOrderBook(orderBook).getAmountOutForMovePrice(tokenIn, amountIn);
+            require(query != address(0), 'PL: ORDER_BOOK_QUERY_NOT_SET');
+            (amountOut,) = IOrderBookQuery(query).getAmountOutForMovePrice(orderBook, tokenIn, amountIn);
         }
         else {
             amountOut = getAmountOut(amountIn, reserveIn, reserveOut);
@@ -104,12 +107,14 @@ library PairLibrary {
         amounts[0] = amountIn;
         extra = new uint[](6 * (path.length - 1));
         address config = IPairFactory(factory).config();
+        address query = IConfig(config).getOrderBookQuery();
         for (uint i; i < path.length - 1; i++) {
             uint index = 6 * i;
             address orderBook = getOrderBook(config, path[i], path[i + 1]);
             if (orderBook != address(0)) {
+                require(query != address(0), 'PL: ORDER_BOOK_QUERY_NOT_SET');
                 uint[] memory extraTmp;
-                (amounts[i + 1], extraTmp) = IOrderBook(orderBook).getAmountOutForMovePrice(path[i], amounts[i]);
+                (amounts[i + 1], extraTmp) = IOrderBookQuery(query).getAmountOutForMovePrice(orderBook, path[i], amounts[i]);
                 (extra[index], extra[index + 1]) = (extraTmp[0], extraTmp[1]);
                 (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);
@@ -148,10 +153,12 @@ library PairLibrary {
         amounts = new uint[](path.length);
         amounts[amounts.length - 1] = amountOut;
         address config = IPairFactory(factory).config();
+        address query = IConfig(config).getOrderBookQuery();
         for (uint i = path.length - 1; i > 0; i--) {
             address orderBook = getOrderBook(config, path[i - 1], path[i]);
             if (orderBook != address(0)) {
-                (amounts[i - 1],) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
+                require(query != address(0), 'PL: ORDER_BOOK_QUERY_NOT_SET');
+                (amounts[i - 1],) = IOrderBookQuery(query).getAmountInForMovePrice(orderBook, path[i], amounts[i]);
             }
             else {
                 (uint reserveIn, uint reserveOut,) = getReserves(factory, path[i - 1], path[i]);
@@ -169,12 +176,14 @@ library PairLibrary {
         extra = new uint[](6 * (path.length - 1));
         amounts[amounts.length - 1] = amountOut;
         address config = IPairFactory(factory).config();
+        address query = IConfig(config).getOrderBookQuery();
         for (uint i = path.length - 1; i > 0; i--) {
             address orderBook = getOrderBook(config, path[i - 1], path[i]);
             uint index = 6 * (i - 1);
             if (orderBook != address(0)) {
+                require(query != address(0), 'PL: ORDER_BOOK_QUERY_NOT_SET');
                 uint[] memory extraTmp;
-                (amounts[i - 1], extraTmp) = IOrderBook(orderBook).getAmountInForMovePrice(path[i], amounts[i]);
+                (amounts[i - 1], extraTmp) = IOrderBookQuery(query).getAmountInForMovePrice(orderBook, path[i], amounts[i]);
                 (extra[index], extra[index + 1]) = (extraTmp[0], extraTmp[1]);
                 (extra[index + 2], extra[index + 3], extra[index + 4], extra[index + 5]) =
                     (extraTmp[2], extraTmp[3], extraTmp[4], extraTmp[5]);

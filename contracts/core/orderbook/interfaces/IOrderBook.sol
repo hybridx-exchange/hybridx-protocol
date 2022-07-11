@@ -41,6 +41,8 @@ interface IOrderBook {
     //get base token balance record
     function quoteBalance() external view returns (uint);
 
+    function getFeeRate() external view returns (uint protocolFeeRate, uint subsidyFeeRate);
+
     //get base token decimal
     function baseDecimal() external view returns (uint);
     //get price decimal
@@ -53,18 +55,13 @@ interface IOrderBook {
     //quote token -- eg: usdc
     function quoteToken() external view returns (address);
 
-    function safeRefund(address token, address payable to) external;
-    //get amount out for move price, include swap and take, and call by uniswap v2 pair
-    function getAmountOutForMovePrice(address tokenIn, uint amountInOffer) external view
-        returns (uint amountOut, uint[] memory extra);
+    function nextBook(uint direction, uint cur) external view returns (uint next, uint amount);
 
-    //get amount in for move price, include swap and take, and call by uniswap v2 pair
-    function getAmountInForMovePrice(address tokenOut, uint amountOutOffer) external view
-        returns (uint amountIn, uint[] memory extra);
+    function safeRefund(address token, address payable to) external;
 
     //take order when move price by uniswap v2 pair
     function takeOrderWhenMovePrice(address tokenIn, uint amountIn, address to) external
         returns (uint amountOut, address[] memory accounts, uint[] memory amounts);
 
-    function cancelLimitOrder(address to, uint orderId) external;
+    function cancelLimitOrder(address to, uint orderId, uint amount) external;
 }

@@ -23,7 +23,7 @@ contract PairRouter is IPairRouter {
     }
 
     receive() external payable {
-        assert(msg.sender == IConfig(config).WETH()); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == IConfig(config).wETH()); // only accept ETH via fallback from the WETH contract
     }
 
     // **** ADD LIQUIDITY ****
@@ -86,19 +86,19 @@ contract PairRouter is IPairRouter {
         address to,
         uint deadline
     ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {
-        address WETH = IConfig(config).WETH();
+        address wETH = IConfig(config).wETH();
         address pair;
         (amountToken, amountETH, pair) = _addLiquidity(
             token,
-            WETH,
+            wETH,
             amountTokenDesired,
             msg.value,
             amountTokenMin,
             amountETHMin
         );
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
-        IWETH(WETH).deposit{value: amountETH}();
-        assert(IWETH(WETH).transfer(pair, amountETH));
+        IWETH(wETH).deposit{value: amountETH}();
+        assert(IWETH(wETH).transfer(pair, amountETH));
         liquidity = IPair(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
@@ -131,7 +131,7 @@ contract PairRouter is IPairRouter {
         address to,
         uint deadline
     ) public virtual override ensure(deadline) returns (uint amountToken, uint amountETH) {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         (amountToken, amountETH) = removeLiquidity(
             token,
             WETH,
@@ -171,7 +171,7 @@ contract PairRouter is IPairRouter {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountToken, uint amountETH) {
-        address pair = PairLibrary.getPair(IConfig(config).getPairFactory(), token, IConfig(config).WETH());
+        address pair = PairLibrary.getPair(IConfig(config).getPairFactory(), token, IConfig(config).wETH());
         uint value = approveMax ? type(uint).max : liquidity;
         IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
@@ -186,7 +186,7 @@ contract PairRouter is IPairRouter {
         address to,
         uint deadline
     ) public virtual override ensure(deadline) returns (uint amountETH) {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         (, amountETH) = removeLiquidity(
             token,
             WETH,
@@ -210,7 +210,7 @@ contract PairRouter is IPairRouter {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountETH) {
-        address pair = PairLibrary.getPair(IConfig(config).getPairFactory(), token, IConfig(config).WETH());
+        address pair = PairLibrary.getPair(IConfig(config).getPairFactory(), token, IConfig(config).wETH());
         uint value = approveMax ? type(uint).max : liquidity;
         IPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
@@ -274,12 +274,12 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
-        require(path[0] == WETH, 'PairRouter: INVALID_PATH');
+        (address wETH, address factory) = (IConfig(config).wETH(), IConfig(config).getPairFactory());
+        require(path[0] == wETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
-        IWETH(WETH).deposit{value: amounts[0]}();
-        assert(IWETH(WETH).transfer(PairLibrary.getPair(factory, path[0], path[1]), amounts[0]));
+        IWETH(wETH).deposit{value: amounts[0]}();
+        assert(IWETH(wETH).transfer(PairLibrary.getPair(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
 
@@ -290,7 +290,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
+        (address WETH, address factory) = (IConfig(config).wETH(), IConfig(config).getPairFactory());
         require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
@@ -309,7 +309,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
+        (address WETH, address factory) = (IConfig(config).wETH(), IConfig(config).getPairFactory());
         require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'PairRouter: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -329,7 +329,7 @@ contract PairRouter is IPairRouter {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        (address WETH, address factory) = (IConfig(config).WETH(), IConfig(config).getPairFactory());
+        (address WETH, address factory) = (IConfig(config).wETH(), IConfig(config).getPairFactory());
         require(path[0] == WETH, 'PairRouter: INVALID_PATH');
         amounts = PairLibrary.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= msg.value, 'PairRouter: EXCESSIVE_INPUT_AMOUNT');
@@ -354,7 +354,9 @@ contract PairRouter is IPairRouter {
                 (uint reserve0, uint reserve1,) = pair.getReserves();
                 (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
-                amountOutput = PairLibrary.getSpecificAmountOut(PairLibrary.getOrderBook(config, input, output),
+                amountOutput = PairLibrary.getSpecificAmountOut(
+                    IConfig(config).getOrderBookQuery(),
+                    PairLibrary.getOrderBook(config, input, output),
                     input,
                     amountInput,
                     reserveInput,
@@ -396,7 +398,7 @@ contract PairRouter is IPairRouter {
         payable
         ensure(deadline)
     {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         require(path[0] == WETH, 'PairRouter: INVALID_PATH');
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
@@ -421,7 +423,7 @@ contract PairRouter is IPairRouter {
         override
         ensure(deadline)
     {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         require(path[path.length - 1] == WETH, 'PairRouter: INVALID_PATH');
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, PairLibrary.getPair(IConfig(config).getPairFactory(), path[0], path[1]), amountIn

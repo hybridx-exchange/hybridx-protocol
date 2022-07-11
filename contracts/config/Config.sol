@@ -19,7 +19,7 @@ contract Config is Ownable, IConfig {
     uint public override priceStepFactor = 1;          // default is 1 / 10000
     mapping(address => uint) public override priceStepMap;
 
-    address public override WETH;
+    address public override wETH;
 
     bytes private orderNFTByteCode;
     uint private orderNFTByteFlag;
@@ -27,8 +27,9 @@ contract Config is Ownable, IConfig {
     uint private orderBookByteFlag;
     address private pairFactory;
     address private orderBookFactory;
-    constructor(address _WETH) {
-        WETH = _WETH;
+    address private orderBookQuery;
+    constructor(address _wETH) {
+        wETH = _wETH;
     }
 
     function getPairFactory() external view override returns (address) {
@@ -48,6 +49,15 @@ contract Config is Ownable, IConfig {
     function setOrderBookFactory(address newOrderBookFactory) external override {
         require(orderBookFactory == address(0), 'Order Book Factory Address set already');
         orderBookFactory = newOrderBookFactory;
+    }
+
+    function getOrderBookQuery() external view override returns (address) {
+        return orderBookQuery;
+    }
+
+    function setOrderBookQuery(address newOrderBookQuery) external override {
+        require(orderBookQuery == address(0), 'Order Book Query Address set already');
+        orderBookQuery = newOrderBookQuery;
     }
 
     function getOrderNFTByteCode() external view override returns (bytes memory bytecode) {

@@ -47,8 +47,8 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
     uint public override quoteBalance;
 
     receive() external payable {
-        address WETH = IConfig(config).WETH();
-        assert(WETH == msg.sender);
+        address wETH = IConfig(config).wETH();
+        assert(wETH == msg.sender);
     }
 
     constructor() {
@@ -78,7 +78,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (baseBalance, quoteBalance) = (quoteBalance, baseBalance);
     }
 
-    function _getFeeRate() internal view returns (uint protocolFeeRate, uint subsidyFeeRate) {
+    function getFeeRate() external view override returns (uint protocolFeeRate, uint subsidyFeeRate) {
         return (IConfig(config).protocolFeeRate(address(this)),
                 IConfig(config).subsidyFeeRate(address(this)));
     }
@@ -102,15 +102,15 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
     }
 
     function _batchTransfer(address token, address[] memory accounts, uint[] memory amounts) internal {
-        address WETH = IConfig(config).WETH();
+        address wETH = IConfig(config).wETH();
         for(uint i=0; i<accounts.length; i++) {
-            _singleTransfer(WETH, token, accounts[i], amounts[i]);
+            _singleTransfer(wETH, token, accounts[i], amounts[i]);
         }
     }
 
-    function _singleTransfer(address WETH, address token, address to, uint amount) internal {
-        if (token == WETH) {
-            IWETH(WETH).withdraw(amount);
+    function _singleTransfer(address wETH, address token, address to, uint amount) internal {
+        if (token == wETH) {
+            IWETH(wETH).withdraw(amount);
             TransferHelper.safeTransferETH(to, amount);
         } else {
             _safeTransfer(token, to, amount);
@@ -144,11 +144,6 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
     function priceStep(uint price) public override view returns (uint step) {
         step = IConfig(config).priceStep(address(this), price);
-    }
-
-    function getDirection(address tokenIn) internal view returns (uint tradeDir, uint orderDir) {
-        tradeDir = quoteToken == tokenIn ? LIMIT_BUY : LIMIT_SELL;
-        orderDir = quoteToken == tokenIn ? LIMIT_SELL : LIMIT_BUY;
     }
 
     //add limit order
@@ -255,7 +250,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         }
     }
 
-    function nextBook(uint direction, uint cur) internal view returns (uint next, uint amount) {
+    function nextBook(uint direction, uint cur) external view override returns (uint next, uint amount) {
         next = nextPrice(direction, cur);
         amount = listAgg(direction, next);
     }
@@ -324,7 +319,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
     function _getAmountAndTake(uint direction, uint amountInOffer, uint price, uint orderAmount) internal
     returns (uint amountIn, uint amountOutWithFee, uint communityFee,
         address[] memory accountsTo, uint[] memory amountsTo) {
-        (uint protocolFeeRate, uint subsidyFeeRate) = _getFeeRate();
+        (uint protocolFeeRate, uint subsidyFeeRate) = this.getFeeRate();
         (amountIn, amountOutWithFee, communityFee) = OrderBookLibrary.getAmountOutForTakePrice
             (direction, amountInOffer, price, baseDecimal(), protocolFeeRate, subsidyFeeRate, orderAmount);
         (accountsTo, amountsTo) = _takeLimitOrder
@@ -352,10 +347,10 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         _safeTransfer(tokenIn, pair, amountAmmIn);
         (uint amount0Out, uint amount1Out) = tokenOut == IPair(pair).token1() ?
             (uint(0), amountAmmOut) : (amountAmmOut, uint(0));
-        address WETH = IConfig(config).WETH();
-        if (WETH == tokenOut) {
+        address wETH = IConfig(config).wETH();
+        if (wETH == tokenOut) {
             IPair(pair).swapOriginal(amount0Out, amount1Out, address(this), new bytes(0));
-            IWETH(WETH).withdraw(amountAmmOut);
+            IWETH(wETH).withdraw(amountAmmOut);
             TransferHelper.safeTransferETH(to, amountAmmOut);
         } else {
             IPair(pair).swapOriginal(amount0Out, amount1Out, to, new bytes(0));
@@ -413,7 +408,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(IConfig(config).WETH(), baseToken, to, amountOrderBookOut);
+            _singleTransfer(IConfig(config).wETH(), baseToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
@@ -484,7 +479,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
         // send the user for take all limit order's amount.
         if (amountOrderBookOut > 0) {
-            _singleTransfer(IConfig(config).WETH(), quoteToken, to, amountOrderBookOut);
+            _singleTransfer(IConfig(config).wETH(), quoteToken, to, amountOrderBookOut);
         }
 
         // swap to target price when there is no limit order less than the target price
@@ -542,15 +537,21 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         _updateBalance();
     }
 
-    function cancelLimitOrder(address to, uint orderId) public lock {
+    function cancelLimitOrder(address to, uint orderId, uint amount) external override lock {
         IOrderNFT.OrderDetail memory o = IOrderNFT(orderNFT).get(orderId);
         require(msg.sender == IOrderNFT(orderNFT).ownerOf(orderId), "OrderBook: Not Owner");
 
-        _removeLimitOrder(orderId, o);
+        if (amount >= o._remain) {
+            amount = o._remain;
+            _removeLimitOrder(orderId, o);
+        }
+        else {
+            IOrderNFT(orderNFT).sub(orderId, amount);
+        }
 
         //refund
         address token = o._type == LIMIT_BUY ? quoteToken : baseToken;
-        _singleTransfer(IConfig(config).WETH(), token, to, o._remain);
+        _singleTransfer(IConfig(config).wETH(), token, to, amount);
 
         //update token balance
         uint balance = IERC20(token).balanceOf(address(this));
@@ -560,119 +561,13 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
 
     function onERC721Received(address, address to, uint256 tokenId, bytes memory) public virtual override
     returns (bytes4) {
-        cancelLimitOrder(to, tokenId);
+        this.cancelLimitOrder(to, tokenId, type(uint).max);
         return this.onERC721Received.selector;
     }
 
     /*******************************************************************************************************
-                                    called by pair and router
+                                    called by pair
      *******************************************************************************************************/
-    function getAmountOutForMovePrice(address tokenIn, uint amountInOffer) external override view
-    returns (uint amountOutGet, uint[] memory extra) {
-        uint[] memory params = new uint[](7);
-        extra = new uint[](6); //nextReserveIn, nextReserveOut, ammIn, ammOut, orderIn, orderOutWithSubsidyFee
-        (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
-        (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
-        (params[4], params[5]) = getDirection(tokenIn);//tradeDir - orderDir
-        params[6] = baseDecimal();
-        uint amountInLeft = amountInOffer;
-        amountOutGet = 0;
-        (uint price, uint amount) = nextBook(params[5], 0);
-        while (price != 0) {
-            uint amountAmmLeft;
-            if (params[4] == LIMIT_BUY) {
-                (amountAmmLeft, extra[1], extra[0], extra[3], extra[2]) =
-                    OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
-                        price, params[6]);
-            }
-            else {
-                (amountAmmLeft, extra[0], extra[1], extra[2], extra[3]) =
-                    OrderBookLibrary.getAmountForMovePrice(params[4], amountInLeft, params[0], params[1],
-                        price, params[6]);
-            }
-
-            if (amountAmmLeft == 0) {
-                break;
-            }
-
-            (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountOutForTakePrice
-                (params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
-            extra[4] += amountInForTake;
-            extra[5] += amountOutWithFee.sub(communityFee);
-            amountOutGet += amountOutWithFee.sub(communityFee);
-            amountInLeft = amountInLeft.sub(amountInForTake);
-            if (amountInForTake == amountAmmLeft) {
-                break;
-            }
-
-            (price, amount) = nextBook(params[5], price);
-        }
-
-        if (amountInLeft > 0) {
-            extra[2] = amountInLeft;
-            extra[3] = params[4] == LIMIT_BUY ?
-                OrderBookLibrary.getAmountOut(amountInLeft, params[1], params[0]) :
-                OrderBookLibrary.getAmountOut(amountInLeft, params[0], params[1]);
-            amountOutGet += extra[3];
-        }
-
-        (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(extra[3])) :
-            (params[0] + extra[2], params[1].sub(extra[3]));
-    }
-
-    function getAmountInForMovePrice(address tokenOut, uint amountOutOffer) external override view
-    returns (uint amountInGet, uint[] memory extra) {
-        uint[] memory params = new uint[](7);
-        extra = new uint[](6); //nextReserveIn, nextReserveOut, ammIn, ammOut, orderIn, orderOutWithSubsidyFee
-        (params[0], params[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken); //reserveBase - reserveQuote
-        (params[2], params[3]) = _getFeeRate(); //protocolFeeRate - subsidyFeeRate
-        (params[5], params[4]) = getDirection(tokenOut);//orderDir - tradeDir
-        params[6] = baseDecimal();
-        uint amountOutLeft = amountOutOffer;
-        amountInGet = 0;
-        (uint price, uint amount) = nextBook(params[5], 0);
-        while (price != 0) {
-            uint amountAmmLeft;
-            if (params[4] == LIMIT_BUY) {
-                (amountAmmLeft, extra[1], extra[0], extra[3], extra[2]) =
-                    OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
-                        price, params[6]);
-            }
-            else {
-                (amountAmmLeft, extra[0], extra[1], extra[2], extra[3]) =
-                    OrderBookLibrary.getAmountForMovePriceWithAmountOut(params[4], amountOutLeft, params[0], params[1],
-                        price, params[6]);
-            }
-
-            if (amountAmmLeft == 0) {
-                break;
-            }
-
-            (uint amountInForTake, uint amountOutWithFee, uint communityFee) = OrderBookLibrary.getAmountInForTakePrice
-                (params[4], amountAmmLeft, price, params[6], params[2], params[3], amount);
-            extra[4] += amountInForTake;
-            extra[5] += amountOutWithFee.sub(communityFee);
-            amountInGet += amountInForTake;
-            amountOutLeft = amountOutLeft.sub(amountOutWithFee.sub(communityFee));
-            if (amountOutWithFee == amountAmmLeft) {
-                break;
-            }
-
-            (price, amount) = nextBook(params[5], price);
-        }
-
-        if (amountOutLeft > 0) {
-            extra[2] = params[4] == LIMIT_BUY ?
-                OrderBookLibrary.getAmountIn(amountOutLeft, params[1], params[0]) :
-                OrderBookLibrary.getAmountIn(amountOutLeft, params[0], params[1]);
-            amountInGet += extra[2];
-            extra[3] = amountOutLeft;
-        }
-
-        (extra[0], extra[1]) = params[4] == LIMIT_BUY ? (params[1] + extra[2], params[0].sub(amountOutLeft)) :
-            (params[0] + extra[2], params[1].sub(amountOutLeft));
-    }
-
     function takeOrderWhenMovePrice(address tokenIn, uint amountIn, address to) external override lock
     returns (uint amountOutLeft, address[] memory accounts, uint[] memory amounts) {
         //take order before pay, make sure only pair can call this function
@@ -681,7 +576,7 @@ contract OrderBook is IOrderBook, IERC721Receiver, OrderQueue, PriceList {
         (reserves[0], reserves[1]) = OrderBookLibrary.getReserves(pair, baseToken, quoteToken);
 
         //direction for tokenA swap to tokenB
-        (uint tradeDir, uint orderDir) = getDirection(tokenIn);
+        (uint tradeDir, uint orderDir) = OrderBookLibrary.getDirection(quoteToken, tokenIn);
         (uint price, uint amount) = firstBook(orderDir);
         uint decimal = baseDecimal();
         while (price != 0) {

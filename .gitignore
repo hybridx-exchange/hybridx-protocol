@@ -1,6 +1,8 @@
 node_modules/
 build/
-artifacts/
 /.idea/
 /yarn.lock
 /package-lock.json
+/cache/
+/.env
+/artifacts/build-info/

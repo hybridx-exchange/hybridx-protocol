@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.0;
 
-import './orderbook/interfaces/IOrderBookRouter.sol';
-import './pair/interfaces/IPairUtils.sol';
-import './pair/interfaces/IPairRouter.sol';
+import "../config/interfaces/IConfig.sol";
+import "./orderbook/interfaces/IOrderBookRouter.sol";
+import "./pair/interfaces/IPairUtils.sol";
+import "./pair/interfaces/IPairRouter.sol";
 import "./Proxy.sol";
 import "../deps/access/Ownable.sol";
 
 //Merge the interface of OrderBookRouter.sol/PairRouter.sol/PairUtils.sol files for unified operation and reduced authorization
 contract HybridXRouter is Proxy {
     address public config;
-    uint internal constant LIMIT_BUY = 1;
-    uint internal constant LIMIT_SELL = 2;
+
+    receive() external payable override {
+        assert(msg.sender == IConfig(config).wETH()); // only accept ETH via fallback from the wETH contract
+    }
 
     mapping(bytes4 => address) public functionMap;
     function _implementation() internal view override returns (address) {

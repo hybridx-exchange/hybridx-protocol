@@ -2,11 +2,13 @@
 pragma solidity ^0.8.0;
 
 interface IConfig {
-    function WETH() external view returns (address);
+    function wETH() external view returns (address);
     function getPairFactory() external view returns (address);
     function setPairFactory(address newPairFactory) external;
     function getOrderBookFactory() external view returns (address);
     function setOrderBookFactory(address newOrderBookFactory) external;
+    function getOrderBookQuery() external view returns (address);
+    function setOrderBookQuery(address newOrderBookQuery) external;
     function getOrderNFTByteCode() external view returns (bytes memory bytecode);
     function setOrderNFTByteCode(bytes memory byteCode) external;
     function appendOrderNFTByteCode(bytes memory byteCode, uint flag) external;

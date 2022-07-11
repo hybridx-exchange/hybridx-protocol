@@ -26,24 +26,29 @@ contract OrderNFT is
     using Counters for Counters.Counter;
     using SafeMath for uint256;
     using Strings for string;
-    using Strings for address;
+    using Strings for uint256;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     Counters.Counter private _tokenIdTracker;
     string private _baseTokenURI = "";
+    uint public id;
 
-    address public orderbook;
+    address public orderBook;
+    address public orderBookFactory;
     mapping(uint => IOrder.OrderDetail) private orderDetails;
     constructor() ERC721("HybridX Order", "ORDER") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _tokenIdTracker.increment();
+        orderBookFactory = msg.sender;
     }
 
-    function initialize(address _admin, address _orderbook) external override {
+    function initialize(uint _id, address _admin, address _orderBook) external override {
+        require(msg.sender == orderBookFactory, 'Order: FORBIDDEN'); // sufficient check
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
-        _setupRole(MINTER_ROLE, _orderbook);
-        orderbook = _orderbook;
+        _setupRole(MINTER_ROLE, _orderBook);
+        id = _id;
+        orderBook = _orderBook;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -53,9 +58,7 @@ contract OrderNFT is
     function symbol() public view virtual override returns (string memory) {
         return super.symbol()
         .concat("#")
-        .concat(IOrderBook(orderbook).baseToken().toHexString())
-        .concat("-")
-        .concat(IOrderBook(orderbook).quoteToken().toHexString());
+        .concat(id.toString());
     }
 
     function add(uint256 tokenId, uint256 amount) external virtual override {
@@ -77,7 +80,7 @@ contract OrderNFT is
     }
 
     function sub(uint256 tokenId, uint256 amount) external virtual override {
-        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to burn");
+        require(hasRole(MINTER_ROLE, _msgSender()), "ORDER: must have minter role to sub");
         OrderDetail memory orderDetail = orderDetails[tokenId];
         require(orderDetail._price != 0, "ORDER: order must be exist");
         uint256 remain = orderDetail._remain.sub(amount);
@@ -103,7 +106,7 @@ contract OrderNFT is
         order = orderDetails[_tokenId];
     }
 
-    function getUserOrders(address user) external view returns (uint[] memory ids, OrderDetail[] memory orders) {
+    function getUserOrders(address user) external view override returns (uint[] memory ids, OrderDetail[] memory orders) {
         uint balance = balanceOf(user);
         if (balance > 0) {
             orders = new OrderDetail[](balance);

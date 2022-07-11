@@ -6,6 +6,7 @@ import "../../deps/interfaces/IERC20.sol";
 import "../../deps/interfaces/IWETH.sol";
 import '../../deps/libraries/TransferHelper.sol';
 import "./interfaces/IOrderBookRouter.sol";
+import { LIMIT_BUY, LIMIT_SELL } from "../../deps/libraries/Const.sol";
 
 /**************************************************************************************************************
 @title                          router for hybrid order book
@@ -14,9 +15,6 @@ import "./interfaces/IOrderBookRouter.sol";
 **************************************************************************************************************/
 contract OrderBookRouter is IOrderBookRouter {
     address public config;
-
-    uint internal constant LIMIT_BUY = 1;
-    uint internal constant LIMIT_SELL = 2;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'OrderBookRouter: EXPIRED');
@@ -77,7 +75,7 @@ contract OrderBookRouter is IOrderBookRouter {
         ensure(deadline)
         returns (uint orderId)
     {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         require(baseToken != WETH, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(baseToken, WETH);
@@ -136,7 +134,7 @@ contract OrderBookRouter is IOrderBookRouter {
         ensure(deadline)
         returns (uint orderId)
     {
-        address WETH = IConfig(config).WETH();
+        address WETH = IConfig(config).wETH();
         require(WETH != quoteToken, 'OrderBookRouter: Invalid_Path');
         address orderBookFactory = IConfig(config).getOrderBookFactory();
         address orderBook = IOrderBookFactory(orderBookFactory).getOrderBook(WETH, quoteToken);
@@ -235,8 +233,8 @@ contract OrderBookRouter is IOrderBookRouter {
         address orderBook = IOrderBookFactory(IConfig(config).getOrderBookFactory()).getOrderBook(tokenA, tokenB);
         if (orderBook != address(0)) {
             price = IOrderBook(orderBook).getPrice();
-            (buyPrices, buyAmounts) = IOrderBook(orderBook).marketBook(OrderBookLibrary.LIMIT_BUY, limitSize);
-            (sellPrices, sellAmounts) = IOrderBook(orderBook).marketBook(OrderBookLibrary.LIMIT_SELL, limitSize);
+            (buyPrices, buyAmounts) = IOrderBook(orderBook).marketBook(LIMIT_BUY, limitSize);
+            (sellPrices, sellAmounts) = IOrderBook(orderBook).marketBook(LIMIT_SELL, limitSize);
         }
     }
 }
